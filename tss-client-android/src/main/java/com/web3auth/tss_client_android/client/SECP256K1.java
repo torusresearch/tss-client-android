@@ -1,9 +1,12 @@
 package com.web3auth.tss_client_android.client;
 
+import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.jce.ECNamedCurveTable;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointCombMultiplier;
@@ -12,6 +15,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.SecureRandom;
+import java.security.Security;
 import java.util.Arrays;
 
 public class SECP256K1 {
@@ -19,12 +23,26 @@ public class SECP256K1 {
     private static final int PRIVATE_KEY_LENGTH = 32;
     private static SecureRandom random = new SecureRandom();
 
-    public static boolean verifyPrivateKey(byte[] privateKey) {
-        if (privateKey.length != PRIVATE_KEY_LENGTH) {
+    public SECP256K1() {
+        Security.addProvider(new BouncyCastleProvider());
+    }
+
+    public static boolean verifyPrivateKey(byte[] privateKeyBytes) {
+        if (privateKeyBytes.length != PRIVATE_KEY_LENGTH) {
             return false;
         }
-        int result = secp256k1_ec_seckey_verify(context, privateKey);
-        return result == 1;
+        try {
+            X9ECParameters curveParams = CustomNamedCurves.getByName("secp256k1");
+            ECDomainParameters domainParams = new ECDomainParameters(curveParams.getCurve(), curveParams.getG(), curveParams.getN(), curveParams.getH());
+            ECPrivateKeyParameters privateKeyParams = new ECPrivateKeyParameters(new BigInteger(1, privateKeyBytes), domainParams);
+            ECPoint publicKeyPoint = domainParams.getG().multiply(privateKeyParams.getD());
+            byte[] publicKeyBytes = publicKeyPoint.getEncoded(false);
+            ECPublicKeyParameters publicKeyParams = new ECPublicKeyParameters(publicKeyPoint, domainParams);
+            boolean isValid = Arrays.equals(publicKeyParams.getQ().getEncoded(false), publicKeyBytes);
+            return isValid;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public static byte[] generatePrivateKey() {
