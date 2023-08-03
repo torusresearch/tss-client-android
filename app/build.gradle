@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    namespace 'com.web3auth.mpc_android_sdk'
-    compileSdk 32
+    namespace 'com.web3auth.tss-client-android'
+    compileSdk 33
 
     defaultConfig {
-        applicationId "com.web3auth.mpc_android_sdk"
+        applicationId "com.web3auth.tss-client-android"
         minSdk 24
-        targetSdk 32
+        targetSdk 33
         versionCode 1
         versionName "1.0"
 
@@ -34,14 +34,6 @@ dependencies {
     implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
 
-    implementation 'org.web3j:core:4.8.8-android'
-    implementation 'com.google.code.gson:gson:2.9.1'
-    implementation 'com.squareup.okhttp3:okhttp:4.9.3'
-    implementation 'org.json:json:20220924'
-    implementation('io.socket:socket.io-client:2.1.0') {
-        // excluding org.json which is provided by Android
-        exclude group: 'org.json', module: 'json'
-    }
 
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
