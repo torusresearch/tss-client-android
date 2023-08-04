@@ -3,7 +3,7 @@
 #include <string>
 #include <cmath>
 
-#define LOG_TAG "TKey"
+#define LOG_TAG "DKLS"
 
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR,    LOG_TAG, __VA_ARGS__)
 #define LOGW(...) __android_log_print(ANDROID_LOG_WARN,     LOG_TAG, __VA_ARGS__)
@@ -12,28 +12,29 @@
 
 inline jmethodID
 getMethodId(JNIEnv *jniEnv, jobject jThis, jstring methodName, jstring methodSignature) {
-    jclass jClass = jniEnv->GetObjectClass(jThis);
+    auto jClass = jniEnv->GetObjectClass(jThis);
     const char *method = jniEnv->GetStringUTFChars(methodName, JNI_FALSE);
     const char *signature = jniEnv->GetStringUTFChars(methodSignature, JNI_FALSE);
-    jmethodID methodId = jniEnv->GetMethodID(jClass, method, signature);
+    auto methodId = jniEnv->GetMethodID(jClass, method, signature);
     jniEnv->ReleaseStringUTFChars(methodSignature, signature);
     jniEnv->ReleaseStringUTFChars(methodName, method);
     return methodId;
 }
 
-inline jlong GetPointerField(JNIEnv *jEnv, jobject jThis, const char *fieldId = "pointer") {
-    jclass cls = jEnv->GetObjectClass(jThis);
-    jfieldID fid = jEnv->GetFieldID(cls, fieldId, "J");
+inline jlong GetPointerField(JNIEnv *jEnv, jobject jThis, const char* fieldId = "pointer") {
+    auto cls = jEnv->GetObjectClass(jThis);
+    auto fid = jEnv->GetFieldID(cls, fieldId, "J");
     jlong lObject = jEnv->GetLongField(jThis, fid);
     return lObject;
 }
 
-inline void
-SetPointerField(JNIEnv *jEnv, jobject jThis, jlong jPointer, const char *fieldId = "pointer") {
-    jclass cls = jEnv->GetObjectClass(jThis);
-    jfieldID fid = jEnv->GetFieldID(cls, fieldId, "J");
+
+inline void SetPointerField(JNIEnv *jEnv, jobject jThis, jlong jPointer, const char* fieldId = "pointer") {
+    auto cls = jEnv->GetObjectClass(jThis);
+    auto fid = jEnv->GetFieldID(cls, fieldId, "J");
     jEnv->SetLongField(jThis, fid, jPointer);
 }
+
 
 inline jboolean setErrorCode(JNIEnv *jEnv, jobject error, jint value) {
     jclass errorClass = jEnv->GetObjectClass(error);

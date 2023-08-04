@@ -48,7 +48,7 @@ target_include_directories(
 target_link_libraries(
         dkls-native
         android
-        tkey
+        DKLS
         ${log-lib}
         "-Wl,--allow-multiple-definition"
 )
