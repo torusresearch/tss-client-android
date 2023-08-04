@@ -39,9 +39,7 @@ Java_com_web3auth_tss_1client_1android_dkls_Precompute_jniPrecomputeToString(JNI
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_web3auth_tss_1client_1android_dkls_Precompute_jnigetRFromPrecompute(JNIEnv *env,
-                                                                               jobject thiz,
-                                                                               jthrowable error) {
+Java_com_web3auth_tss_1client_1android_dkls_Precompute_jnigetRFromPrecompute(JNIEnv *env, jobject thiz, jthrowable error) {
     int errorCode = 0;
     int *error_ptr = &errorCode;
     jlong pObject = GetPointerField(env, thiz);

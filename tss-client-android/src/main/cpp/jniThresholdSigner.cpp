@@ -9,15 +9,8 @@
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_web3auth_tss_1client_1android_dkls_ThresholdSigner_jniThresholdSigner(JNIEnv *env,
-                                                                               jobject thiz,
-                                                                               jstring session,
-                                                                               jint player_index,
-                                                                               jint parties,
-                                                                               jint threshold,
-                                                                               jstring share,
-                                                                               jstring pk,
-                                                                               jthrowable dkls_error) {
+Java_com_web3auth_tss_1client_1android_dkls_ThresholdSigner_jniThresholdSigner(JNIEnv *env, jobject thiz, jstring session, jint player_index, jint parties,
+                                                                               jint threshold, jstring share, jstring pk, jthrowable dkls_error) {
     int errorCode = 0;
     int *error_ptr = &errorCode;
     const char *pSession = env->GetStringUTFChars(session, JNI_FALSE);

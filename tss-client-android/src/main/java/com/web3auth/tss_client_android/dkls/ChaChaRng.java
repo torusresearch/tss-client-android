@@ -6,7 +6,6 @@ import androidx.annotation.RequiresApi;
 
 import com.web3auth.tss_client_android.client.SECP256K1;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 public final class ChaChaRng {
