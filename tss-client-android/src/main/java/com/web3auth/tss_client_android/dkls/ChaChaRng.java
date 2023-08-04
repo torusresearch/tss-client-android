@@ -11,8 +11,7 @@ import java.util.Base64;
 
 public final class ChaChaRng {
     private final long pointer;
-
-    @RequiresApi(api = Build.VERSION_CODES.O)
+    @RequiresApi(api = Build.VERSION_CODES.O) // TODO: Compatibility with older versions
     public ChaChaRng() throws DKLSError {
         DKLSError dklsError = new DKLSError();
         byte[] stateBytes = SECP256K1.generatePrivateKey();
@@ -20,8 +19,7 @@ public final class ChaChaRng {
             throw new DKLSError("Error generating random bytes for generator initialization");
         }
         // convert bytes to base64
-        String state = Base64.getEncoder().encodeToString(stateBytes);
-        byte[] base64Bytes = state.getBytes(StandardCharsets.UTF_8);
+        String state = Base64.getEncoder().encodeToString(stateBytes); // This requires Build.VERSION_CODES.O
         long ptr = jniChaChaRng(state, dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
@@ -37,9 +35,5 @@ public final class ChaChaRng {
     protected void finalize() throws Throwable {
         super.finalize();
         jniChaChaRngFree();
-    }
-
-    public long getPointer() {
-        return pointer;
     }
 }

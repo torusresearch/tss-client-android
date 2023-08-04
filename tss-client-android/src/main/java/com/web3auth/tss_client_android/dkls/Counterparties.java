@@ -3,41 +3,32 @@ package com.web3auth.tss_client_android.dkls;
 public final class Counterparties {
     private long pointer;
 
+    private native long jniCounterparties_From_String(String parties, DKLSError error);
+
+    private native String jniCounterparties_To_String(DKLSError error);
+
+    private native void jniCounterpartiesFree();
+
     public Counterparties(String parties) throws DKLSError {
         DKLSError dklsError = new DKLSError();
-        byte[] partiesBytes = parties.getBytes();
-        pointer = jniCounterparties_From_String(String.valueOf(partiesBytes), dklsError);
+        pointer = jniCounterparties_From_String(parties, dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
         }
     }
-
-    private native long jniCounterparties_From_String(String parties, DKLSError error);
-
-    private native byte[] jniCounterparties_To_String(long pointer, DKLSError error);
-
-    private native void jniDkls_string_free(byte[] result);
-
-    private native void jniCounterpartiesFree(long pointer);
 
     public String export() throws DKLSError {
         DKLSError dklsError = new DKLSError();
-        byte[] result = jniCounterparties_To_String(pointer, dklsError);
+        String result = jniCounterparties_To_String(dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
         }
-        String value = new String(result);
-        jniDkls_string_free(result);
-        return value;
-    }
-
-    public long getPointer() {
-        return pointer;
+        return result;
     }
 
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        jniCounterpartiesFree(pointer);
+        jniCounterpartiesFree();
     }
 }

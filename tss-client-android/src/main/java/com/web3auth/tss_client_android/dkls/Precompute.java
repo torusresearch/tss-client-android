@@ -5,51 +5,43 @@ public final class Precompute {
 
     public Precompute(String precompute) throws DKLSError {
         DKLSError dklsError = new DKLSError();
-        byte[] precomputeBytes = precompute.getBytes();
-        pointer = jniPrecomputeFromString(precomputeBytes, dklsError);
+        pointer = jniPrecomputeFromString(precompute, dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
         }
     }
+    private native long jniPrecomputeFromString(String parties, DKLSError error);
 
-    private native long jniPrecomputeFromString(byte[] parties, DKLSError error);
+    private native String jniPrecomputeToString(DKLSError error);
 
-    private native byte[] jniPrecomputeToString(long pointer, DKLSError error);
+    private native String jnigetRFromPrecompute(DKLSError error);
 
-    private native void jniDklsStringFree(byte[] result);
-
-    private native byte[] jnigetR_FromPrecompute(byte[] precomputeBytes, DKLSError error);
-
-    private native void jniPrecomputeFree(long pointer);
+    private native void jniPrecomputeFree();
 
     public String export() throws DKLSError {
         DKLSError dklsError = new DKLSError();
-        byte[] result = jniPrecomputeToString(pointer, dklsError);
+        String result = jniPrecomputeToString(dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
         }
         String value = new String(result);
-        jniDklsStringFree(result);
         return value;
     }
 
     public String getR() throws DKLSError {
         DKLSError dklsError = new DKLSError();
-        String precomputeString = export();
-        byte[] precomputeBytes = precomputeString.getBytes();
-        byte[] result = jnigetR_FromPrecompute(precomputeBytes, dklsError);
+        String result = jnigetRFromPrecompute(dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
         }
         String value = new String(result);
-        jniDklsStringFree(result);
         return value;
     }
 
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        jniPrecomputeFree(pointer);
+        jniPrecomputeFree();
     }
 }
 

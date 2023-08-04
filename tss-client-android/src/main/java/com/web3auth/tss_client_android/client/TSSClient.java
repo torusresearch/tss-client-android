@@ -1,5 +1,8 @@
 package com.web3auth.tss_client_android.client;
 
+import android.os.Build;
+
+import androidx.annotation.RequiresApi;
 import androidx.core.util.Pair;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -51,6 +54,7 @@ public class TSSClient {
     private boolean consumed = false;
     private boolean _sLessThanHalf = true;
 
+    @RequiresApi(api = Build.VERSION_CODES.O)
     public TSSClient(String session, long index, int[] parties, URL[] endpoints,
                      URL[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError {
         if (parties.length != tssSocketEndpoints.length) {
@@ -301,7 +305,7 @@ public class TSSClient {
         return Utilities.localSign(message, hashOnly, precompute);
     }
 
-    private String verifyWithPrecompute(String message, boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws Exception, DKLSError {
+    private String verifyWithPrecompute(String message,  boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws Exception, DKLSError {
         return Utilities.localVerify(message, hashOnly, precompute, fragments, pubKey);
     }
 

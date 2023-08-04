@@ -11,7 +11,7 @@ extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_web3auth_tss_1client_1android_dkls_DKLSComm_jniDklsComm(JNIEnv *env, jobject thiz,
                                                                  jint index, jint parties,
-                                                                 jbyteArray session_bytes,
+                                                                 jstring sessions,
                                                                  jobject read_msg_callback,
                                                                  jobject send_msg_callback,
                                                                  jthrowable dkls_error) {
@@ -23,6 +23,6 @@ JNIEXPORT void JNICALL
 Java_com_web3auth_tss_1client_1android_dkls_DKLSComm_jniDklsCommFree(JNIEnv *env, jobject thiz) {
     // TODO: implement jniDklsCommFree()
     jlong pObject = GetPointerField(env, thiz);
-    auto pGenerator = reinterpret_cast<DKLSMsgComm *>(pObject);
-    dkls_comm_free(pGenerator);
+    auto pObj = reinterpret_cast<DKLSMsgComm *>(pObject);
+    dkls_comm_free(pObj);
 }
