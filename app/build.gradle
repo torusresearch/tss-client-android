@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.web3auth.tss-client-android'
+    namespace 'com.web3auth.tss_client_android_example'
     compileSdk 33
 
     defaultConfig {
-        applicationId "com.web3auth.tss-client-android"
+        applicationId "com.web3auth.tss_client_android_example"
         minSdk 24
         targetSdk 33
         versionCode 1

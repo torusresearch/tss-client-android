@@ -1,4 +1,4 @@
-package com.web3auth.tss_client_android;
+package com.web3auth.tss_client_android_example;
 
 import static org.junit.Assert.assertEquals;
 
