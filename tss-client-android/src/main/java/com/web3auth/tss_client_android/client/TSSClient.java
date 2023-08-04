@@ -86,7 +86,7 @@ public class TSSClient {
             return false;
         };
 
-        comm = new DKLSComm(session, (int) this.index, parties.length, readMsg, sendMsg);
+        comm = new DKLSComm(session, (int) this.index, parties.length);
 
         rng = new ChaChaRng();
 
