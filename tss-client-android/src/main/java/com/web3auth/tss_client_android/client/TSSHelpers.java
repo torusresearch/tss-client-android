@@ -5,6 +5,7 @@ import com.web3auth.tss_client_android.DELIMITERS;
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.Arrays;
 import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Keys;
@@ -15,8 +16,9 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 public class TSSHelpers {
 
@@ -163,6 +165,61 @@ public class TSSHelpers {
         return combined.getEncoded(false);
     }
 
+    public static byte[] getFinalTssPublicKey1(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws TSSClientError {
+        BigInteger serverLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, BigInteger.ONE);
+        BigInteger userLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, userTssIndex);
+
+        ECPoint serverTermUnprocessed = SECP256K1.parsePublicKey(dkgPubKey);
+        ECPoint userTermUnprocessed = SECP256K1.parsePublicKey(userSharePubKey);
+
+        if (serverTermUnprocessed == null || userTermUnprocessed == null) {
+            throw new TSSClientError("InvalidPublicKey");
+        }
+
+        ECPoint serverTerm = serverTermUnprocessed;
+        ECPoint userTerm = userTermUnprocessed;
+
+        byte[] serverLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(serverLagrangeCoeff.toByteArray());
+        byte[] userLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(userLagrangeCoeff.toByteArray());
+
+        ECPoint serverTermProcessed = SECP256K1.ecdh(serverTerm, serverLagrangeCoeffData);
+        ECPoint userTermProcessed = SECP256K1.ecdh(userTerm, userLagrangeCoeffData);
+
+        if (serverTermProcessed == null || userTermProcessed == null) {
+            throw new TSSClientError("Failed to process server term");
+        }
+
+        serverTerm = serverTermProcessed;
+        userTerm = userTermProcessed;
+
+        byte[] serializedServerTerm = SECP256K1.serializePublicKey(serverTerm, false);
+        byte[] serializedUserTerm = SECP256K1.serializePublicKey(userTerm, false);
+
+        if (serializedServerTerm == null || serializedUserTerm == null) {
+            throw new TSSClientError("Failed to process client term");
+        }
+
+        byte[] combination = SECP256K1.combineSerializedPublicKeys(new byte[][] { serializedServerTerm, serializedUserTerm }, false);
+
+        if (combination == null) {
+            throw new TSSClientError("Failed to combine keys");
+        }
+
+        return combination;
+    }
+
+    private static byte[] ensureDataLengthIs32Bytes(byte[] data) {
+        if (data.length == 32) {
+            return data;
+        } else if (data.length > 32) {
+            return Arrays.copyOfRange(data, data.length - 32, data.length);
+        } else {
+            byte[] newData = new byte[32];
+            System.arraycopy(data, 0, newData, 32 - data.length, data.length);
+            return newData;
+        }
+    }
+
     public static String byteArrayToHexString(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
@@ -188,15 +245,18 @@ public class TSSHelpers {
         return upper.multiply(invLower).mod(secp256k1N);
     }
 
-    public static BigInteger getAdditiveCoefficient(boolean isUser, BigInteger[] participatingServerIndexes, BigInteger userTSSIndex, BigInteger serverIndex) {
+    public static BigInteger getAdditiveCoefficient(boolean isUser, BigInteger[] participatingServerIndexes, BigInteger userTSSIndex, BigInteger serverIndex) throws TSSClientError {
         if (isUser) {
             return getLagrangeCoefficients(new BigInteger[]{new BigInteger("1"), userTSSIndex}, userTSSIndex);
         }
-        BigInteger serverLagrangeCoeff = getLagrangeCoefficients(participatingServerIndexes, serverIndex);
-        BigInteger masterLagrangeCoeff = getLagrangeCoefficients(new BigInteger[]{new BigInteger("1"), userTSSIndex}, new BigInteger("1"));
-        BigInteger additiveLagrangeCoeff = serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(secp256k1N);
-        System.out.println("Additive Coeff: " + additiveLagrangeCoeff);
-        return additiveLagrangeCoeff;
+        if (serverIndex != null) {
+            BigInteger serverLagrangeCoeff = getLagrangeCoefficients(participatingServerIndexes, serverIndex);
+            BigInteger masterLagrangeCoeff = getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTSSIndex}, BigInteger.ONE);
+            BigInteger additiveLagrangeCoeff = serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(secp256k1N);
+            return additiveLagrangeCoeff;
+        } else {
+            throw new TSSClientError("isUser is false, serverIndex must be supplied");
+        }
     }
 
     public static BigInteger getDenormalizedCoefficient(BigInteger party, List<BigInteger> parties) {
@@ -208,43 +268,41 @@ public class TSSHelpers {
         return denormaliseLagrangeCoeff;
     }
 
-    public static BigInteger getDKLSCoefficient(boolean isUser, List<BigInteger> participatingServerIndexes,
-                                                BigInteger userTSSIndex, BigInteger serverIndex) {
+    public static BigInteger getDKLSCoefficient(boolean isUser, List<BigInteger> participatingServerIndexes, BigInteger userTssIndex, BigInteger serverIndex) throws TSSClientError {
         List<BigInteger> sortedServerIndexes = new ArrayList<>(participatingServerIndexes);
         Collections.sort(sortedServerIndexes);
 
         for (int i = 0; i < sortedServerIndexes.size(); i++) {
-            if (!Objects.equals(sortedServerIndexes.get(i), participatingServerIndexes.get(i))) {
-                throw new IllegalArgumentException("server indexes must be sorted");
+            if (!sortedServerIndexes.get(i).equals(participatingServerIndexes.get(i))) {
+                throw new TSSClientError("server indexes must be sorted");
             }
         }
 
         List<BigInteger> parties = new ArrayList<>();
+        BigInteger serverPartyIndex = BigInteger.ZERO;
 
-        // total number of parties for DKLS = total number of servers + 1 (user is the last party)
-        // server party indexes
-        int serverPartyIndex = 0;
         for (int i = 0; i < participatingServerIndexes.size(); i++) {
-            int currentPartyIndex = i + 1;
-            parties.add(BigInteger.valueOf(currentPartyIndex));
-            if (Objects.equals(participatingServerIndexes.get(i), serverIndex)) {
+            BigInteger currentPartyIndex = BigInteger.valueOf(i + 1);
+            parties.add(currentPartyIndex);
+            if (participatingServerIndexes.get(i).equals(serverIndex)) {
                 serverPartyIndex = currentPartyIndex;
             }
         }
-        BigInteger userPartyIndex = BigInteger.valueOf(parties.size() + 1);
-        parties.add(userPartyIndex); // user party index
 
-        BigInteger coeff;
+        BigInteger userPartyIndex = BigInteger.valueOf(parties.size() + 1);
+        parties.add(userPartyIndex);
+
+        BigInteger additiveCoeff = TSSHelpers.getAdditiveCoefficient(isUser, participatingServerIndexes.toArray(new BigInteger[0]), userTssIndex, serverIndex);
+
         if (isUser) {
-            BigInteger additiveCoeff = getAdditiveCoefficient(isUser, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
-            BigInteger denormaliseCoeff = getDenormalizedCoefficient(userPartyIndex, parties);
-            return denormaliseCoeff.multiply(additiveCoeff).mod(secp256k1N);
+            BigInteger denormaliseCoeff = TSSHelpers.getDenormalizedCoefficient(userPartyIndex, parties);
+            return denormaliseCoeff.multiply(additiveCoeff).mod(TSSClient.modulusValueSigned);
+        } else {
+            BigInteger denormaliseCoeff = TSSHelpers.getDenormalizedCoefficient(serverPartyIndex, parties);
+            return denormaliseCoeff.multiply(additiveCoeff).mod(TSSClient.modulusValueSigned);
         }
-        BigInteger additiveCoeff = getAdditiveCoefficient(isUser, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
-        BigInteger denormaliseCoeff = getDenormalizedCoefficient(BigInteger.valueOf(serverPartyIndex), parties);
-        coeff = denormaliseCoeff.multiply(additiveCoeff).mod(secp256k1N);
-        return coeff;
     }
+
 
     public static String recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) throws Exception {
         Sign.SignatureData signatureData  = new Sign.SignatureData(v, r.toByteArray(), s.toByteArray());
@@ -275,5 +333,51 @@ public class TSSHelpers {
                 sessionNonce;
 
         return fullSession;
+    }
+
+    public static Map<String, String> getServerCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
+        Map<String, String> serverCoeffs = new HashMap<>();
+        for (int i = 0; i < participatingServerDKGIndexes.length; i++) {
+            BigInteger participatingServerIndex = participatingServerDKGIndexes[i];
+            BigInteger coefficient = TSSHelpers.getDKLSCoefficient(
+                    false, List.of(participatingServerDKGIndexes), userTssIndex, participatingServerIndex
+            );
+
+            // Values should never contain leading zeros
+            String key = TSSHelpers.removeLeadingZeros(participatingServerIndex.toString(16));
+            String value = TSSHelpers.removeLeadingZeros(coefficient.toString(16));
+            serverCoeffs.put(key, value);
+        }
+
+        return serverCoeffs;
+    }
+
+    public static String addLeadingZerosForLength64(String str) {
+        if (str.length() < 64) {
+            String toAdd = "0".repeat(64 - str.length());
+            return toAdd + str;
+        } else {
+            return str;
+        }
+    }
+
+    public static String removeLeadingZeros(String str) {
+        int found = -1;
+        for (int i = 0; i < str.length(); i++) {
+            if (str.charAt(i) != '0') {
+                found = i;
+                break;
+            }
+        }
+
+        if (found != -1) {
+            return str.substring(found);
+        } else {
+            if (str.isEmpty()) {
+                return str;
+            } else {
+                return "0";
+            }
+        }
     }
 }

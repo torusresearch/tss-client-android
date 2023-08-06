@@ -136,6 +136,24 @@ public class SECP256K1 {
         return ecPoint.multiply(new BigInteger(privateKeyHex, 16));
     }*/
 
+    public static byte[] serializePublicKey(ECPoint publicKey, boolean compressed) {
+        ECCurve curve = publicKey.getCurve();
+        int keyLength = compressed ? 33 : 65;
+
+        byte[] serializedPubkey = new byte[keyLength];
+        byte[] pointData = publicKey.getEncoded(compressed);
+
+        // Fill with leading zeros if needed
+        int offset = keyLength - pointData.length;
+        if (offset > 0) {
+            System.arraycopy(pointData, 0, serializedPubkey, offset, pointData.length);
+        } else {
+            serializedPubkey = pointData;
+        }
+
+        return serializedPubkey;
+    }
+
     public static ECPoint combineSerializedPublicKeys(byte[][] keys) {
         ECCurve curve = ECNamedCurveTable.getParameterSpec("secp256k1").getCurve();
         ECPoint result = curve.getInfinity();
@@ -144,6 +162,36 @@ public class SECP256K1 {
             result = result.add(point);
         }
         return result;
+    }
+
+    public static byte[] combineSerializedPublicKeys(byte[][] keys, boolean outputCompressed) {
+        int numToCombine = keys.length;
+        if (numToCombine < 1) {
+            return null;
+        }
+
+        ECPoint[] points = new ECPoint[numToCombine];
+        for (int i = 0; i < numToCombine; i++) {
+            byte[] keyData = keys[i];
+            ECPoint publicKey = SECP256K1.parsePublicKey(keyData);
+            if (publicKey == null) {
+                return null;
+            }
+            points[i] = publicKey;
+        }
+
+        byte[][] byteArray = new byte[numToCombine][];
+        for (int i = 0; i < numToCombine; i++) {
+            byte[] data = SECP256K1.serializePublicKey(points[i], false);
+            byteArray[i] = data;
+        }
+
+        ECPoint combinedPoint = SECP256K1.combineSerializedPublicKeys(byteArray);
+        if (combinedPoint == null) {
+            return null;
+        }
+
+        return combinedPoint.getEncoded(outputCompressed);
     }
 
 
