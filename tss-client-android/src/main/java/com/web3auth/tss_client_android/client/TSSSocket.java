@@ -2,7 +2,6 @@ package com.web3auth.tss_client_android.client;
 
 import org.json.JSONObject;
 
-import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -14,11 +13,11 @@ import io.socket.emitter.Emitter;
 public class TSSSocket {
     private final String session;
     private final int party;
-    private final URL socketURL;
+    private final String socketURL;
     private Socket socket;
     private Map<String, String> headers;
 
-    public TSSSocket(String session, int party, URL socketURL) {
+    public TSSSocket(String session, int party, String socketURL) {
         this.session = session;
         this.party = party;
         this.socketURL = socketURL;

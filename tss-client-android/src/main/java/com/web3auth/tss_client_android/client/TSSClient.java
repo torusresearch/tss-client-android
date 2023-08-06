@@ -1,5 +1,7 @@
 package com.web3auth.tss_client_android.client;
 
+import static com.web3auth.tss_client_android.client.AES256CBC.bytesToHex;
+
 import android.os.Build;
 
 import androidx.annotation.RequiresApi;
@@ -23,9 +25,14 @@ import org.bouncycastle.util.encoders.Hex;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -35,7 +42,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import kotlin.Triple;
-
 
 public class TSSClient {
 
@@ -55,8 +61,8 @@ public class TSSClient {
     private boolean _sLessThanHalf = true;
 
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public TSSClient(String session, long index, int[] parties, URL[] endpoints,
-                     URL[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError {
+    public TSSClient(String session, long index, int[] parties, String[] endpoints,
+                     String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         if (parties.length != tssSocketEndpoints.length) {
             throw new TSSClientError("Parties and socket length must be equal");
         }
@@ -76,7 +82,7 @@ public class TSSClient {
             }
         }
 
-        DKLSComm.ReadMsgCallback readMsg = (sessionCString, _index, party, msgTypeCString) -> {
+        /*DKLSComm.ReadMsgCallback readMsg = (sessionCString, _index, party, msgTypeCString) -> {
             // Implement the readMsg callback
             return null;
         };
@@ -84,7 +90,7 @@ public class TSSClient {
         DKLSComm.SendMsgCallback sendMsg = (sessionCString, _index, recipient, msgTypeCString, msgDataCString) -> {
             // Implement the sendMsg callback
             return false;
-        };
+        };*/
 
         comm = new DKLSComm(session, (int) this.index, parties.length);
 
@@ -127,7 +133,7 @@ public class TSSClient {
                 try {
                     Pair<TSSEndpoint, TSSSocket> tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(session, (int) party);
                     String socketID = tssConnection.second.getSocket().id();
-                    String tssUrl = tssConnection.first.getUrl().toString();
+                    String tssUrl = tssConnection.first.getUrl();
                     String urlStr = tssUrl + "/precompute";
                     URL url = new URL(urlStr);
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -194,7 +200,8 @@ public class TSSClient {
         }
     }
 
-    public Triple sign(String message, boolean hashOnly, String originalMessage, Precompute precompute, List<String> signatures) throws TSSClientError {
+    public Triple<BigInteger, BigInteger, Byte> sign(String message, boolean hashOnly, String originalMessage,
+                                                     Precompute precompute, List<String> signatures) throws TSSClientError {
         try {
             if (!isReady()) {
                 throw new TSSClientError("Client is not ready");
@@ -213,7 +220,7 @@ public class TSSClient {
 
             if (hashOnly) {
                 if (originalMessage != null) {
-                    String hashedMessage = TSSHelpers.hashMessage(originalMessage);
+                    String hashedMessage = bytesToHex(TSSHelpers.hashMessage(originalMessage.getBytes(StandardCharsets.UTF_8)));
                     if (!hashedMessage.equals(message)) {
                         throw new TSSClientError("hash of original message does not match message");
                     }
@@ -350,5 +357,42 @@ public class TSSClient {
             }
         }
         return connections == (parties - 1);
+    }
+
+    public void cleanup(String[] signatures) throws Exception {
+        MessageQueue.shared().removeMessages(this.session);
+        EventQueue.shared().removeEvents(this.session);
+        boolean consumed = false;
+        boolean ready = false;
+
+        for (int i = 0; i < this.parties; i++) {
+            if (i != this.index) {
+                Pair<TSSEndpoint, TSSSocket> tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(this.session, i);
+                String url = tssConnection.first.getUrl();
+                URL endpoint = new URL(url + "/cleanup");
+                HttpURLConnection connection = (HttpURLConnection) endpoint.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setRequestProperty("Access-Control-Allow-Origin", "*");
+                connection.setRequestProperty("Access-Control-Allow-Methods", "GET, POST");
+                connection.setRequestProperty("Access-Control-Allow-Headers", "Content-Type");
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
+
+                Map<String, Object> msg = new HashMap<>();
+                msg.put("session", session);
+                msg.put("signatures", signatures);
+
+                connection.setDoOutput(true);
+                OutputStream out = connection.getOutputStream();
+                out.write(new ObjectMapper().writeValueAsBytes(msg));
+
+                int responseCode = connection.getResponseCode();
+                if (responseCode != 200) {
+                    System.out.println("Failed to cleanup for " + url);
+                }
+
+                connection.disconnect();
+            }
+        }
     }
 }

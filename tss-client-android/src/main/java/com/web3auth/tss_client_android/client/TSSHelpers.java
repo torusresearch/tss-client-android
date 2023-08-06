@@ -1,18 +1,17 @@
 package com.web3auth.tss_client_android.client;
 
-import android.os.Build;
-
-import androidx.annotation.RequiresApi;
-
 import com.web3auth.tss_client_android.DELIMITERS;
 
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
+import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.Hash;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
+import org.web3j.utils.Numeric;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -27,12 +26,12 @@ public class TSSHelpers {
         // Optional: Add any initialization code here
     }
 
-    public static String hashMessage(String message) {
-        byte[] hashedData = Hash.sha3(message.getBytes(StandardCharsets.UTF_8));
-        return bytesToHex(hashedData);
+    public static byte[] hashMessage(byte[] message) {
+        byte[] hashedData = Hash.sha3(message);
+        return hashedData;
     }
 
-    private static String bytesToHex(byte[] bytes) {
+    public static String bytesToHex(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
             sb.append(String.format("%02x", b));
@@ -40,7 +39,6 @@ public class TSSHelpers {
         return sb.toString();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     public static String base64Share(BigInteger share) throws TSSClientError {
         if (share.signum() == -1) {
             throw new TSSClientError("Share may not be negative");
@@ -58,7 +56,6 @@ public class TSSHelpers {
         return base64Encoded;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     public static String base64PublicKey(byte[] pubKey) throws TSSClientError {
         if (pubKey.length == 65) {
             // Check if the first byte is 0x04 indicating uncompressed format
@@ -166,6 +163,14 @@ public class TSSHelpers {
         return combined.getEncoded(false);
     }
 
+    public static String byteArrayToHexString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
+    }
+
     public static BigInteger getLagrangeCoefficients(BigInteger[] allIndexes, BigInteger myIndex) {
         BigInteger target = new BigInteger("0");
         BigInteger upper = new BigInteger("1");
@@ -239,6 +244,27 @@ public class TSSHelpers {
         BigInteger denormaliseCoeff = getDenormalizedCoefficient(BigInteger.valueOf(serverPartyIndex), parties);
         coeff = denormaliseCoeff.multiply(additiveCoeff).mod(secp256k1N);
         return coeff;
+    }
+
+    public static String recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) throws Exception {
+        Sign.SignatureData signatureData  = new Sign.SignatureData(v, r.toByteArray(), s.toByteArray());
+        int header = 0;
+        for (byte b : signatureData.getV()) {
+            header = (header << 8) + (b & 0xFF);
+        }
+        if (header < 27 || header > 34) {
+            return null;
+        }
+        int recId = header - 27;
+        BigInteger key = Sign.recoverFromSignature(
+                recId,
+                new ECDSASignature(
+                        new BigInteger(1, signatureData.getR()), new BigInteger(1, signatureData.getS())),
+                Numeric.hexStringToByteArray(msgHash));
+        if (key == null) {
+            return null;
+        }
+        return ("0x" + Keys.getAddress(key)).trim();
     }
 
     public static String assembleFullSession(String verifier, String verifierId, String tssTag, String tssNonce, String sessionNonce) {

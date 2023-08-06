@@ -10,10 +10,17 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointCombMultiplier;
+import org.bouncycastle.util.encoders.Hex;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Keys;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.util.Arrays;
@@ -23,8 +30,26 @@ public class SECP256K1 {
     private static final int PRIVATE_KEY_LENGTH = 32;
     private static SecureRandom random = new SecureRandom();
 
-    public SECP256K1() {
-        Security.addProvider(new BouncyCastleProvider());
+    {
+        setupBouncyCastle();
+    }
+
+    private void setupBouncyCastle() {
+        final Provider provider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
+        if (provider == null) {
+            // Web3j will set up the provider lazily when it's first used.
+            return;
+        }
+        if (provider.getClass().equals(BouncyCastleProvider.class)) {
+            // BC with same package name, shouldn't happen in real life.
+            return;
+        }
+        // Android registers its own BC provider. As it might be outdated and might not include
+        // all needed ciphers, we substitute it with a known BC bundled in the app.
+        // Android's BC has its package rewritten to "com.android.org.bouncycastle" and because
+        // of that it's possible to have another BC implementation loaded in VM.
+        Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
     }
 
     public static boolean verifyPrivateKey(byte[] privateKeyBytes) {
@@ -45,15 +70,14 @@ public class SECP256K1 {
         }
     }
 
-    public static byte[] generatePrivateKey() {
-        for (int i = 0; i < 1024; i++) {
-            byte[] keyData = new byte[32];
-            random.nextBytes(keyData);
-            if (verifyPrivateKey(keyData)) {
-                return keyData;
-            }
-        }
-        return null;
+    public static BigInteger generatePrivateKey() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+        ECKeyPair tmpKey = Keys.createEcKeyPair();
+        return tmpKey.getPrivateKey();
+    }
+
+    public static BigInteger privateToPublic(String privateKey) {
+        ECKeyPair ecKeyPair = ECKeyPair.create(new BigInteger(privateKey, 16));
+        return ecKeyPair.getPublicKey();
     }
 
     public static UnmarshaledSignature unmarshalSignature(byte[] signatureData) {
@@ -120,6 +144,25 @@ public class SECP256K1 {
             result = result.add(point);
         }
         return result;
+    }
+
+
+    public static byte[] privateKeyToPublicKey(byte[] privateKey) {
+        if (privateKey.length != 32) {
+            return null;
+        }
+
+        X9ECParameters params = CustomNamedCurves.getByName("secp256k1");
+        ECDomainParameters domainParams = new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
+
+        BigInteger privKeyInt = new BigInteger(1, privateKey);
+        ECPrivateKeyParameters privateKeyParams = new ECPrivateKeyParameters(privKeyInt, domainParams);
+        ECPoint publicKeyPoint = params.getG().multiply(privKeyInt);
+
+        // Get the public key as a byte array.
+        byte[] publicKeyBytes = publicKeyPoint.getEncoded(true);
+        System.out.println("Public Key (hex): " + Hex.toHexString(publicKeyBytes));
+        return publicKeyBytes;
     }
 
     public static byte[] marshalSignature(byte v, byte[] r, byte[] s) {

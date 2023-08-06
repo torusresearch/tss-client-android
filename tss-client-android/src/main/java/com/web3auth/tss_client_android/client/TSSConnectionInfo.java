@@ -2,7 +2,6 @@ package com.web3auth.tss_client_android.client;
 
 import androidx.core.util.Pair;
 
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +18,7 @@ public final class TSSConnectionInfo {
         return instance;
     }
 
-    public void addInfo(String session, int party, URL endpoint, URL socketUrl) {
+    public void addInfo(String session, int party, String endpoint, String socketUrl) {
         synchronized (TSSConnectionInfo.class) {
             endpoints.add(new TSSEndpoint(session, party, endpoint));
             socketManagers.add(new TSSSocket(session, party, socketUrl));

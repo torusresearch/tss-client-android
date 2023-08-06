@@ -15,6 +15,10 @@ import com.web3auth.tss_client_android.dkls.Utilities;
 
 import org.junit.Test;
 
+import java.security.InvalidAlgorithmParameterException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+
 public class DklsTests {
 
     @Test
@@ -22,7 +26,7 @@ public class DklsTests {
         try {
             ChaChaRng rng = new ChaChaRng();
             assertNotNull(rng);
-        } catch (DKLSError e) {
+        } catch (DKLSError | InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException e) {
             fail("Exception occurred: " + e.getLocalizedMessage());
         }
     }

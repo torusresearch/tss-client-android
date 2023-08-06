@@ -1,13 +1,11 @@
 package com.web3auth.tss_client_android.client;
 
-import java.net.URL;
-
 public final class TSSEndpoint {
     private final String session;
     private final int party;
-    private final URL url;
+    private final String url;
 
-    public TSSEndpoint(String session, int party, URL url) {
+    public TSSEndpoint(String session, int party, String url) {
         this.session = session;
         this.party = party;
         this.url = url;
@@ -21,7 +19,7 @@ public final class TSSEndpoint {
         return party;
     }
 
-    public URL getUrl() {
+    public String getUrl() {
         return url;
     }
 }
