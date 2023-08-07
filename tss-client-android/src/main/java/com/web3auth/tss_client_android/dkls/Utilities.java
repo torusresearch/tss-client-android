@@ -31,9 +31,6 @@ public final class Utilities {
     public static String localSign(String message, boolean hashOnly, Precompute precompute) throws DKLSError {
         DKLSError dklsError = new DKLSError();
         String input = precompute.export();
-        if (dklsError.code != 0) {
-            throw dklsError;
-        }
         String result = jniDklsLocalSign(message, hashOnly, input, dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
@@ -44,9 +41,6 @@ public final class Utilities {
     public static String localVerify(String message, boolean hashOnly, Precompute precompute, SignatureFragments signatureFragments, String pubKey) throws DKLSError {
         DKLSError dklsError = new DKLSError();
         String r = precompute.getR();
-        if (dklsError.code != 0) {
-            throw dklsError;
-        }
         String result = jniDklsLocalVerify(message, hashOnly, r, signatureFragments, pubKey, dklsError);
         if (dklsError.code != 0) {
             throw dklsError;

@@ -18,6 +18,7 @@ public final class ChaChaRng {
     @RequiresApi(api = Build.VERSION_CODES.O) // TODO: Compatibility with older versions
     public ChaChaRng() throws DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         DKLSError dklsError = new DKLSError();
+        SECP256K1.setupBouncyCastle();
         BigInteger privKey = SECP256K1.generatePrivateKey();
         byte[] stateBytes = privKey.toString(16).getBytes(StandardCharsets.UTF_8);
         if (stateBytes == null) {
@@ -26,7 +27,7 @@ public final class ChaChaRng {
         // convert bytes to base64
         String state = Base64.getEncoder().encodeToString(stateBytes); // This requires Build.VERSION_CODES.O
         long ptr = jniChaChaRng(state, dklsError);
-        if (dklsError.code != 0) {
+        if (dklsError.code != 5) {
             throw dklsError;
         }
         pointer = ptr;

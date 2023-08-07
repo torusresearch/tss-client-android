@@ -6,6 +6,7 @@ import org.bouncycastle.math.ec.ECPoint;
 
 import java.math.BigInteger;
 import java.net.URISyntaxException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +22,7 @@ import io.socket.client.Socket;
 
 public class Utils {
 
+    private static final SecureRandom secureRandom = new SecureRandom();
     public static final BigInteger secp256k1N = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16);
     public static List<String> torusNodeEndpoints = Arrays.asList(
             "https://sapphire-1.auth.network/sss/jrpc",
@@ -221,5 +223,21 @@ public class Utils {
             hex += String.format("%02X", i);
         }
         return hex;
+    }
+
+    public static void ClearBytes(byte[] data) {
+        for (int i = 0; i < data.length; i++) {
+            data[i] = 0;
+        }
+    }
+
+    public static SecureRandom SecureRandom() {
+        return secureRandom;
+    }
+
+    public static byte[] RandomBytes(int length) {
+        byte[] bytes = new byte[length];
+        secureRandom.nextBytes(bytes);
+        return bytes;
     }
 }

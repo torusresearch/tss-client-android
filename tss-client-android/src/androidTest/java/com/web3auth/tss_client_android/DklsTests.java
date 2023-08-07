@@ -5,6 +5,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import androidx.test.ext.junit.runners.AndroidJUnit4;
+
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;
 import com.web3auth.tss_client_android.dkls.DKLSError;
@@ -14,19 +16,26 @@ import com.web3auth.tss_client_android.dkls.ThresholdSigner;
 import com.web3auth.tss_client_android.dkls.Utilities;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 
+@RunWith(AndroidJUnit4.class)
 public class DklsTests {
+
+    static {
+        System.loadLibrary("dkls-native");
+    }
 
     @Test
     public void testRng() {
         try {
             ChaChaRng rng = new ChaChaRng();
             assertNotNull(rng);
-        } catch (DKLSError | InvalidAlgorithmParameterException | NoSuchAlgorithmException | NoSuchProviderException e) {
+        } catch (DKLSError | InvalidAlgorithmParameterException | NoSuchAlgorithmException |
+                 NoSuchProviderException e) {
             fail("Exception occurred: " + e.getLocalizedMessage());
         }
     }
@@ -74,7 +83,7 @@ public class DklsTests {
             String pubKey = "mbkxU1rQ0QkUzcFBUSSGh8TSaO2ndoHBXiIJexxa26DK430ZcOQIkYyWYgeRaIvyZo7oQliNd6PquEcIE2daUw==";
             SignatureFragments fragments = new SignatureFragments("JLphVR9bO7pNnmL6dRQARixCwk3P07tsWu7TETIXNF0=,fcMuarM6YL0MR5j1kDxFw+q6OyKigW8n5sZnBGvzRZo=,BBJdnq8dFqFCXaiJZSiUzGANUDxlP8UXAenW9gfKLvk=");
             String sig = Utilities.localVerify(hash, hashOnly, precompute, fragments, pubKey);
-            assertEquals(sig, "TSbPQiau1tJoG6b2flNKXXb8EIGqgaAZ7PkuWJaNcKGmj+1egbKzGJxDpHlqeNrWdwpNrNeU76tDnxELpdSo8A=");
+            assertEquals(sig, "TSbPQiau1tJoG6b2flNKXXb8EIGqgaAZ7PkuWJaNcKGmj+1egbKzGJxDpHlqeNrWdwpNrNeU76tDnxELpdSo8A==");
         } catch (DKLSError e) {
             fail("Exception occurred: " + e.getLocalizedMessage());
         }

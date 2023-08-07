@@ -1,5 +1,7 @@
 package com.web3auth.tss_client_android.client;
 
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
 import org.bouncycastle.crypto.params.ECDomainParameters;
@@ -14,6 +16,7 @@ import org.bouncycastle.util.encoders.Hex;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Keys;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -28,13 +31,16 @@ import java.util.Arrays;
 public class SECP256K1 {
 
     private static final int PRIVATE_KEY_LENGTH = 32;
+    private static final String CURVE_N = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141";
+    public static final BigInteger modulusValueUnsigned = new BigInteger(CURVE_N, 16);
+    public static final BigInteger modulusValueSigned = new BigInteger(CURVE_N, 16);
     private static SecureRandom random = new SecureRandom();
 
     {
         setupBouncyCastle();
     }
 
-    private void setupBouncyCastle() {
+    public static void setupBouncyCastle() {
         final Provider provider = Security.getProvider(BouncyCastleProvider.PROVIDER_NAME);
         if (provider == null) {
             // Web3j will set up the provider lazily when it's first used.
@@ -90,12 +96,16 @@ public class SECP256K1 {
         return new UnmarshaledSignature(v, r, s);
     }
 
-    public static ECPoint parsePublicKey(byte[] serializedKey) {
+    public static ECPoint parsePublicKey(byte[] serializedKey) throws IOException {
         ECCurve curve = ECNamedCurveTable.getParameterSpec("secp256k1").getCurve();
         int keyLen = serializedKey.length;
         if (keyLen != 33 && keyLen != 65) {
             return null;
         }
+
+        SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(
+                ASN1Sequence.getInstance(serializedKey));
+        byte[] otherEncoded = subjectPublicKeyInfo.parsePublicKey().getEncoded();
 
         byte[] keyBytes = Arrays.copyOf(serializedKey, keyLen);
         if (keyLen == 65 && keyBytes[0] == 0x04) {
@@ -164,7 +174,7 @@ public class SECP256K1 {
         return result;
     }
 
-    public static byte[] combineSerializedPublicKeys(byte[][] keys, boolean outputCompressed) {
+    public static byte[] combineSerializedPublicKeys(byte[][] keys, boolean outputCompressed) throws IOException {
         int numToCombine = keys.length;
         if (numToCombine < 1) {
             return null;
