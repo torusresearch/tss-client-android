@@ -7,6 +7,7 @@ import static org.junit.Assert.fail;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.web3auth.tss_client_android.client.SECP256K1;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;
 import com.web3auth.tss_client_android.dkls.DKLSError;
@@ -15,6 +16,8 @@ import com.web3auth.tss_client_android.dkls.SignatureFragments;
 import com.web3auth.tss_client_android.dkls.ThresholdSigner;
 import com.web3auth.tss_client_android.dkls.Utilities;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -27,6 +30,16 @@ public class DklsTests {
 
     static {
         System.loadLibrary("dkls-native");
+    }
+
+    @BeforeClass
+    public static void setupTest() {
+        SECP256K1.setupBouncyCastle();
+    }
+
+    @AfterClass
+    public static void cleanTest() {
+        System.gc();
     }
 
     @Test
