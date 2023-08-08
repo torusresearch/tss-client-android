@@ -125,7 +125,6 @@ public class DklsTests {
         String publicKey = "+AHtxLzwIRuzGFj/PZlgPpupyzqBvCn63nXjrWd6B9djE4NZL5b/HaHW/fGTxlfCa871n+FrkUnQhnSd3+ND7A==";
         try {
             ThresholdSigner signer = new ThresholdSigner(session, index, parties, threshold, share, publicKey);
-            assertNotNull(signer);
         } catch (DKLSError e) {
             fail("Exception occurred: " + e.getLocalizedMessage());
         }

@@ -19,7 +19,7 @@ public final class DKLSComm {
     private long pointer;
 
     @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
-    public String readMsg(String session, int index, int remote, String msgType) throws ExecutionException, InterruptedException {
+    private String readMsg(String session, int index, int remote, String msgType) throws ExecutionException, InterruptedException {
         if ("ga1_worker_support".equals(msgType)) {
             return "not supported";
         }
@@ -48,7 +48,7 @@ public final class DKLSComm {
     }
 
     @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
-    public boolean sendMsg(String session, int index, int remote, String  msgType, String msgData) {
+    private boolean sendMsg(String session, int index, int remote, String  msgType, String msgData) {
         try {
             Pair<TSSEndpoint, TSSSocket> tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(session, (int) remote);
             TSSSocket tsssocket = tssConnection.second;
