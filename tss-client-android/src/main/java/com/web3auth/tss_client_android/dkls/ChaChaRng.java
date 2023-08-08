@@ -19,7 +19,7 @@ public final class ChaChaRng {
     public ChaChaRng() throws DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         DKLSError dklsError = new DKLSError();
         BigInteger privKey = SECP256K1.generatePrivateKey();
-        byte[] stateBytes = privKey.toString(16).getBytes(StandardCharsets.UTF_8);
+        byte[] stateBytes = privKey.toByteArray();
         if (stateBytes == null) {
             throw new DKLSError("Error generating random bytes for generator initialization");
         }

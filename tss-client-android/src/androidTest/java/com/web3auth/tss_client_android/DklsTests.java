@@ -46,7 +46,6 @@ public class DklsTests {
     public void testRng() {
         try {
             ChaChaRng rng = new ChaChaRng();
-            assertNotNull(rng);
         } catch (DKLSError | InvalidAlgorithmParameterException | NoSuchAlgorithmException |
                  NoSuchProviderException e) {
             fail("Exception occurred: " + e.getLocalizedMessage());

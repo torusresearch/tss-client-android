@@ -12,6 +12,7 @@ import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 import org.web3j.utils.Numeric;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -165,7 +166,7 @@ public class TSSHelpers {
         return combined.getEncoded(false);
     }
 
-    public static byte[] getFinalTssPublicKey1(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws TSSClientError {
+    public static byte[] getFinalTssPublicKey1(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws TSSClientError, IOException {
         BigInteger serverLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, BigInteger.ONE);
         BigInteger userLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, userTssIndex);
 
