@@ -79,7 +79,7 @@ public final class DKLSComm {
         long result = jniDklsComm(index, parties, session,
                 "readMsg",
                 "(Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;", "sendMsg",
-                "(Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;)Z", dklsError);
+                "(Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;)Z", dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
         }
