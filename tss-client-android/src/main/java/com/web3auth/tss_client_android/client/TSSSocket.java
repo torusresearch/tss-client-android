@@ -9,6 +9,7 @@ import java.util.Map;
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
+import io.socket.engineio.client.transports.WebSocket;
 
 public class TSSSocket {
     private final String session;
@@ -26,8 +27,8 @@ public class TSSSocket {
         try {
             IO.Options options = new IO.Options();
             options.path = "/tss/socket.io";
-            //options.query = sessionId;
-            options.transports = new String[]{"websocket"};
+            options.query = session.split("default0")[1];
+            options.transports = new String[]{WebSocket.NAME};
             options.secure = true;
             options.reconnectionDelayMax = 10000;
             options.reconnectionAttempts = 3;

@@ -38,6 +38,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -62,7 +63,7 @@ public class TSSClient {
 
     @RequiresApi(api = Build.VERSION_CODES.O)
     public TSSClient(String session, long index, int[] parties, String[] endpoints,
-                     String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+                     String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, ExecutionException, InterruptedException {
         if (parties.length != tssSocketEndpoints.length) {
             throw new TSSClientError("Parties and socket length must be equal");
         }
@@ -78,19 +79,9 @@ public class TSSClient {
 
         for (int i = 0; i < endpoints.length; i++) {
             if (i != this.index) {
-                TSSConnectionInfo.getShared().addInfo(session, (int) i, endpoints[i], tssSocketEndpoints[i]);
+                TSSConnectionInfo.getShared().addInfo(session, i, endpoints[i], tssSocketEndpoints[i]);
             }
         }
-
-        /*DKLSComm.ReadMsgCallback readMsg = (sessionCString, _index, party, msgTypeCString) -> {
-            // Implement the readMsg callback
-            return null;
-        };
-
-        DKLSComm.SendMsgCallback sendMsg = (sessionCString, _index, recipient, msgTypeCString, msgDataCString) -> {
-            // Implement the sendMsg callback
-            return false;
-        };*/
 
         comm = new DKLSComm(session, (int) this.index, parties.length);
 
@@ -117,7 +108,7 @@ public class TSSClient {
         for (int i = 0; i < parties; i++) {
             if (i != index) {
                 try {
-                    TSSSocket tssSocket = TSSConnectionInfo.getShared().lookupEndpoint(session, (int) i).second;
+                    TSSSocket tssSocket = TSSConnectionInfo.getShared().lookupEndpoint(session, i).second;
                     if (tssSocket.getSocket() == null && tssSocket.getSocket().id() == null) {
                         throw new TSSClientError("socket not connected yet, party: " + i + ", session: " + session);
                     }

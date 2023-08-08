@@ -3,7 +3,7 @@ package com.web3auth.tss_client_android.TSSmessages;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class SendMsg {
+public class TssSendMsg {
 
     private String session;
     private int index;
@@ -11,7 +11,7 @@ public class SendMsg {
     private String msg_type;
     private String msg_data;
 
-    public SendMsg(String session, int index, int recipient, String msg_type, String msg_data) {
+    public TssSendMsg(String session, int index, int recipient, String msg_type, String msg_data) {
         this.session = session;
         this.index = index;
         this.recipient = recipient;

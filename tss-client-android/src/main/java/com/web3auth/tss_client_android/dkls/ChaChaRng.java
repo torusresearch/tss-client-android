@@ -7,7 +7,6 @@ import androidx.annotation.RequiresApi;
 import com.web3auth.tss_client_android.client.SECP256K1;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -19,14 +18,14 @@ public final class ChaChaRng {
     public ChaChaRng() throws DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         DKLSError dklsError = new DKLSError();
         BigInteger privKey = SECP256K1.generatePrivateKey();
-        byte[] stateBytes = privKey.toString(16).getBytes(StandardCharsets.UTF_8);
+        byte[] stateBytes = privKey.toByteArray();
         if (stateBytes == null) {
             throw new DKLSError("Error generating random bytes for generator initialization");
         }
         // convert bytes to base64
         String state = Base64.getEncoder().encodeToString(stateBytes); // This requires Build.VERSION_CODES.O
         long ptr = jniChaChaRng(state, dklsError);
-        if (dklsError.code != 5) {
+        if (dklsError.code != 0) {
             throw dklsError;
         }
         pointer = ptr;

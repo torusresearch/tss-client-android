@@ -12,7 +12,9 @@ import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 import org.web3j.utils.Numeric;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
@@ -60,19 +62,20 @@ public class TSSHelpers {
 
     public static String base64PublicKey(byte[] pubKey) throws TSSClientError {
         if (pubKey.length == 65) {
-            // Check if the first byte is 0x04 indicating uncompressed format
-            if (pubKey[0] == 0x04) {
-                byte[] droppedPrefix = new byte[pubKey.length - 1];
-                System.arraycopy(pubKey, 1, droppedPrefix, 0, droppedPrefix.length);
-                return Base64.getEncoder().encodeToString(droppedPrefix);
+            if (pubKey[0] == 0) {
+                byte[] trimmedKey = new byte[pubKey.length - 1];
+                System.arraycopy(pubKey, 1, trimmedKey, 0, trimmedKey.length);
+                return Base64.getEncoder().encodeToString(trimmedKey);
             } else {
                 throw new TSSClientError("Invalid public key bytes");
             }
-        } else if (pubKey.length == 64) {
-            return Base64.getEncoder().encodeToString(pubKey);
-        } else {
-            throw new TSSClientError("Invalid public key bytes");
         }
+
+        if (pubKey.length == 64) {
+            return Base64.getEncoder().encodeToString(pubKey);
+        }
+
+        throw new TSSClientError("Invalid public key bytes");
     }
 
     public static String hexUncompressedPublicKey(byte[] pubKey, boolean return64Bytes) throws TSSClientError {
@@ -150,11 +153,11 @@ public class TSSHelpers {
             throw new TorusException("userSharePubKey is invalid");
         }
 
-        BigInteger serverPrivateKey = serverLagrangeCoefficient.mod(secp256k1N);
-        BigInteger userPrivateKey = userLagrangeCoefficient.mod(secp256k1N);
+        byte[] serverLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(serverLagrangeCoefficient.toByteArray());
+        byte[] userLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(userLagrangeCoefficient.toByteArray());
 
-        ECPoint serverTerm = SECP256K1.ecdh(parsedDkgPubKey, serverPrivateKey.toByteArray());
-        ECPoint userTerm = SECP256K1.ecdh(parsedUserSharePubKey, userPrivateKey.toByteArray());
+        ECPoint serverTerm = SECP256K1.ecdh(parsedDkgPubKey, serverLagrangeCoeffData);
+        ECPoint userTerm = SECP256K1.ecdh(parsedUserSharePubKey, userLagrangeCoeffData);
 
         byte[] serializedServerTerm = serverTerm.getEncoded(false);
         byte[] serializedUserTerm = userTerm.getEncoded(false);
@@ -165,7 +168,7 @@ public class TSSHelpers {
         return combined.getEncoded(false);
     }
 
-    public static byte[] getFinalTssPublicKey1(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws TSSClientError {
+    public static byte[] getFinalTssPublicKey1(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws TSSClientError, IOException {
         BigInteger serverLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, BigInteger.ONE);
         BigInteger userLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, userTssIndex);
 
@@ -303,8 +306,16 @@ public class TSSHelpers {
         }
     }
 
-
-    public static String recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) throws Exception {
+    public static boolean verifySignature(String msgHash, BigInteger s, BigInteger r, byte v, byte[] pubKey) {
+        try {
+            String pk = TSSHelpers.recoverPublicKey(msgHash, s, r, v);
+            assert pk != null;
+            return pk.getBytes(StandardCharsets.UTF_8) == pubKey;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    public static String recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) {
         Sign.SignatureData signatureData  = new Sign.SignatureData(v, r.toByteArray(), s.toByteArray());
         int header = 0;
         for (byte b : signatureData.getV()) {
