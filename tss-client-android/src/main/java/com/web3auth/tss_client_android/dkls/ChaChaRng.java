@@ -26,7 +26,7 @@ public final class ChaChaRng {
         // convert bytes to base64
         String state = Base64.getEncoder().encodeToString(stateBytes); // This requires Build.VERSION_CODES.O
         long ptr = jniChaChaRng(state, dklsError);
-        if (dklsError.code != 5) {
+        if (dklsError.code != 0) {
             throw dklsError;
         }
         pointer = ptr;
