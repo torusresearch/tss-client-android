@@ -2,7 +2,6 @@ package com.web3auth.tss_client_android;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.web3j.utils.Numeric.hexStringToByteArray;
 
 import com.web3auth.tss_client_android.client.TSSClientError;
 import com.web3auth.tss_client_android.client.TSSHelpers;
@@ -11,6 +10,7 @@ import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,26 +71,34 @@ public class TssHelpersTests {
 
     @Test
     public void testFinalGetTSSPubkey() throws Exception {
-        byte[] dkgpub = new byte[1 + 32 + 32];
-        dkgpub[0] = 0x04;
-        byte[] xCoord1 = hexStringToByteArray("18db3574e4217154769ad9cd88900e7f1c198aa60a1379f3869ba8a7699e6b53");
-        System.arraycopy(xCoord1, 0, dkgpub, 1, xCoord1.length);
-        byte[] yCoord1 = hexStringToByteArray("d4f7d578667c38003f881f262e21655a38241401d9fc029c9a6fcbca8ac97713");
-        System.arraycopy(yCoord1, 0, dkgpub, xCoord1.length + 1, yCoord1.length);
+        ByteBuffer dkgpubBuffer = ByteBuffer.allocate(1 + 32 + 32);
+        dkgpubBuffer.put((byte) 0x04); // Uncompressed key prefix
+        dkgpubBuffer.put(hexStringToByteArray(Utils.padLeft("18db3574e4217154769ad9cd88900e7f1c198aa60a1379f3869ba8a7699e6b53",'0', 64)));
+        dkgpubBuffer.put(hexStringToByteArray(Utils.padLeft("d4f7d578667c38003f881f262e21655a38241401d9fc029c9a6fcbca8ac97713", '0', 64)));
+        byte[] dkgpubBytes = dkgpubBuffer.array();
 
-        byte[] userpub = new byte[1 + 32 + 32];
-        userpub[0] = 0x04;
-        byte[] xCoord2 = hexStringToByteArray("b4259bffab844a5255ba0c8f278b7fd857c094460b9051c95f04b29f9792368c");
-        System.arraycopy(xCoord2, 0, userpub, 1, xCoord2.length);
-        byte[] yCoord2 = hexStringToByteArray("790eb133df835aa22fd087d5e33b26f2d2e046b6670ac7603500bc1227216247");
-        System.arraycopy(yCoord2, 0, userpub, xCoord2.length + 1, yCoord2.length);
-
+        ByteBuffer userpubBuffer = ByteBuffer.allocate(1 + 32 + 32);
+        userpubBuffer.put((byte) 0x04); // Uncompressed key prefix
+        userpubBuffer.put(hexStringToByteArray(Utils.padLeft("b4259bffab844a5255ba0c8f278b7fd857c094460b9051c95f04b29f9792368c", '0', 64)));
+        userpubBuffer.put(hexStringToByteArray(Utils.padLeft("790eb133df835aa22fd087d5e33b26f2d2e046b6670ac7603500bc1227216247", '0', 64)));
+        byte[] userpubBytes = userpubBuffer.array();
 
         BigInteger userTssIndex = new BigInteger("2");
 
-        byte[] tssPub = TSSHelpers.getFinalTssPublicKey1(dkgpub, userpub, userTssIndex);
+        byte[] tssPub = TSSHelpers.getFinalTssPublicKey(dkgpubBytes, userpubBytes, userTssIndex);
         String expected = "04dd1619c7e99eb665e37c74828762e6a677511d4c52656ddc6499a57d486bddb8c0dc63b229ec9a31f4216138c3fbb67ac2630831135aecbaf0aafa095e439c61";
         assertEquals(expected, Hex.toHexString(tssPub));
+    }
+
+    // Helper function to convert hex strings to byte arrays
+    private static byte[] hexStringToByteArray(String hexString) {
+        int length = hexString.length();
+        byte[] bytes = new byte[length / 2];
+        for (int i = 0; i < length; i += 2) {
+            bytes[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4)
+                    + Character.digit(hexString.charAt(i + 1), 16));
+        }
+        return bytes;
     }
 
     @Test
@@ -114,6 +122,7 @@ public class TssHelpersTests {
         str = "000000";
         res = TSSHelpers.removeLeadingZeros(str);
         assertEquals("0", res);
+
     }
 
     @Test
