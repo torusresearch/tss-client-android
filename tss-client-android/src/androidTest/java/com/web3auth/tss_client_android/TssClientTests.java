@@ -21,7 +21,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.web3j.crypto.Keys;
+import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Sign;
 
 import java.io.IOException;
@@ -96,7 +96,7 @@ public class TssClientTests {
         List<String> sigs = new ArrayList<>();
         for (String privKey : getPrivateKeys()) {
             byte[] hash = TSSHelpers.hashMessage(token.getBytes(StandardCharsets.UTF_8));
-            Sign.SignatureData signature = Sign.signPrefixedMessage(hash, Keys.createEcKeyPair());
+            Sign.SignatureData signature = Sign.signPrefixedMessage(hash, ECKeyPair.create(hexStringToByteArray(privKey)));
             ASN1EncodableVector v = new ASN1EncodableVector();
             v.add(new ASN1Integer(signature.getR()));
             v.add(new ASN1Integer(signature.getS()));
@@ -111,6 +111,17 @@ public class TssClientTests {
         }
 
         return sigs;
+    }
+
+    public static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len/2];
+
+        for(int i = 0; i < len; i+=2){
+            data[i/2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i+1), 16));
+        }
+
+        return data;
     }
 
     public static BigInteger lagrange(BigInteger[] parties, BigInteger party) {

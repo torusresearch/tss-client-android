@@ -2,6 +2,7 @@ package com.web3auth.tss_client_android.client;
 
 import org.json.JSONObject;
 
+import java.net.URI;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,15 +26,16 @@ public class TSSSocket {
         this.headers = new HashMap<>();
 
         try {
-            IO.Options options = new IO.Options();
-            options.path = "/tss/socket.io";
-            options.query = session.split("default0")[1];
-            options.transports = new String[]{WebSocket.NAME};
-            options.secure = true;
-            options.reconnectionDelayMax = 10000;
-            options.reconnectionAttempts = 3;
-            options.forceNew = true;
-            socket = IO.socket(String.valueOf(socketURL), options);
+            IO.Options options = IO.Options.builder()
+                    .setPath("/tss/socket.io")
+                    .setQuery(session.split("default0")[1])
+                    .setTransports(new String[]{WebSocket.NAME})
+                    .setSecure(true)
+                    .setReconnectionDelayMax(10000)
+                    .setReconnectionAttempts(3)
+                    .setForceNew(true)
+                    .build();
+            socket = IO.socket(URI.create(socketURL), options);
         } catch (Exception e) {
             e.printStackTrace();
         }

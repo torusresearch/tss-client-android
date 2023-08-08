@@ -6,6 +6,8 @@ import androidx.annotation.RequiresApi;
 
 import com.web3auth.tss_client_android.client.SECP256K1;
 
+import org.bouncycastle.util.Arrays;
+
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
@@ -18,7 +20,8 @@ public final class ChaChaRng {
     public ChaChaRng() throws DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         DKLSError dklsError = new DKLSError();
         BigInteger privKey = SECP256K1.generatePrivateKey();
-        byte[] stateBytes = privKey.toByteArray();
+        byte[] stateBytes = Arrays.copyOfRange(privKey.toByteArray(), 1, privKey.toByteArray().length);
+        System.out.println(stateBytes.length);
         if (stateBytes == null) {
             throw new DKLSError("Error generating random bytes for generator initialization");
         }
