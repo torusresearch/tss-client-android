@@ -30,7 +30,7 @@ public class TSSSocket {
                     //.setPath("/tss/socket.io")
                     .setQuery(session.split("default0")[1])
                     .setTransports(new String[]{WebSocket.NAME})
-                    .setSecure(true)
+                    //.setSecure(true)
                     .setReconnectionDelayMax(10000)
                     .setReconnectionAttempts(3)
                     .setForceNew(true)
@@ -118,6 +118,7 @@ public class TSSSocket {
 
         });
         socket.connect();
+        System.out.println("socket");
     }
 
     public void disconnect() {
