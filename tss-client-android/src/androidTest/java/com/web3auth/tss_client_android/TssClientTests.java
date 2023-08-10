@@ -273,7 +273,7 @@ public class TssClientTests {
                 vid + "default" + "0" + Hex.toHexString(randomNonce) + testingRouteIdentifier;
         System.out.println("session:" + session);
         List<String> sigs = getSignatures();
-        EndpointsData endpointsResult = Utils.generateEndpoints(parties, clientIndex);
+        EndpointsData endpointsResult = generateEndpoints(parties, clientIndex);
         List<String> endpoints = endpointsResult.getEndpoints();
         List<String> socketEndpoints = endpointsResult.getTssWSEndpoints();
         List<Integer> partyIndexes = endpointsResult.getPartyIndexes();

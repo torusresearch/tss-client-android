@@ -27,7 +27,7 @@ public class TSSSocket {
 
         try {
             IO.Options options = IO.Options.builder()
-                    .setPath("/tss/socket.io")
+                    //.setPath("/tss/socket.io")
                     .setQuery(session.split("default0")[1])
                     .setTransports(new String[]{WebSocket.NAME})
                     .setSecure(true)
