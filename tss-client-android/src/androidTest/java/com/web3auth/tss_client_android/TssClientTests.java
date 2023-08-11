@@ -15,7 +15,6 @@ import com.web3auth.tss_client_android.dkls.Precompute;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -52,10 +51,10 @@ public class TssClientTests {
     }
 
     static class Delimiters {
-        static final char Delimiter1 = '\u001c';
-        static final char Delimiter2 = '\u0015';
-        static final char Delimiter3 = '\u0016';
-        static final char Delimiter4 = '\u0017';
+        public static final String Delimiter1 = "\u001c";
+        public static final String Delimiter2 = "\u0015";
+        public static final String Delimiter3 = "\u0016";
+        public static final String Delimiter4 = "\u0017";
     }
 
     private final List<String> privateKeys = new ArrayList<>();
@@ -83,7 +82,7 @@ public class TssClientTests {
         return privateKeys;
     }
 
-    private List<String> getSignatures() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, IOException {
+    private List<String> getSignatures() throws IOException {
         Map<String, Object> tokenData = new HashMap<>();
         tokenData.put("exp", new Date().getTime() + 3000 * 60);
         tokenData.put("temp_key_x", "test_key_x");
@@ -249,8 +248,8 @@ public class TssClientTests {
                 endPoints.add(null);
                 tssWSEndpoints.add(null);
             } else {
-                endPoints.add("http://localhost:" + (basePort + serverPortOffset));
-                tssWSEndpoints.add("http://localhost:" + (basePort + serverPortOffset));
+                endPoints.add("http://192.168.1.11:" + (basePort + serverPortOffset));
+                tssWSEndpoints.add("http://192.168.1.11:" + (basePort + serverPortOffset));
                 serverPortOffset++;
             }
         }
@@ -266,11 +265,12 @@ public class TssClientTests {
 
         BigInteger randomKey = SECP256K1.generatePrivateKey();
         BigInteger random = randomKey.add(BigInteger.valueOf(System.currentTimeMillis() / 1000));
-        byte[] randomNonce = TSSHelpers.hashMessage(random.toByteArray());
+        String randomNonce = TSSHelpers.bytesToHex(TSSHelpers.hashMessage(random.toByteArray()));
         String testingRouteIdentifier = "testingShares";
         String vid = "test_verifier_name" + "test_verifier_id";
         String session = testingRouteIdentifier +
-                vid + "default" + "0" + Hex.toHexString(randomNonce) + testingRouteIdentifier;
+                vid + "default" + "0" + randomNonce +
+                testingRouteIdentifier;
         System.out.println("session:" + session);
         List<String> sigs = getSignatures();
         EndpointsData endpointsResult = generateEndpoints(parties, clientIndex);
@@ -301,6 +301,7 @@ public class TssClientTests {
             while (!client.checkConnected()) {
                 // no-op
             }
+            System.out.println("Reached here");
             Precompute precompute = client.precompute(coeffs, sigs);
             while (!client.isReady()) {
                 // no-op

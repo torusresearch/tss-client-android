@@ -118,7 +118,6 @@ public class TSSSocket {
 
         });
         socket.connect();
-        System.out.println("socket");
     }
 
     public void disconnect() {
