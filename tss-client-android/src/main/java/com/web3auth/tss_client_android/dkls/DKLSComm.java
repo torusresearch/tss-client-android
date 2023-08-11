@@ -19,7 +19,7 @@ public final class DKLSComm {
     private long pointer;
 
     @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
-    private String readMsg(String session, int index, int remote, String msgType) throws ExecutionException, InterruptedException {
+    private String readMsg(String session, int index, int remote, String msgType) {
         if ("ga1_worker_support".equals(msgType)) {
             return "not supported";
         }
@@ -28,20 +28,24 @@ public final class DKLSComm {
         Date now = new Date();
         String result = "";
         while (!found) {
-            Message message = MessageQueue.shared().findMessage(session, (int) remote, (int) index, msgType);
-            if (message != null) {
-                result = message.getMsgData();
-                MessageQueue.shared().removeMessage(session, (int) remote, (int) index, msgType);
-                found = true;
-            }
-            if (new Date().getTime() > now.getTime() + 5000 && !found) { // 5 second wait max
-                System.out.println("Failed to receive message in reasonable time");
-                break;
-            } else {
-                Map<EventType, Integer> counts = EventQueue.shared().countEvents(session);
-                if (counts.get(EventType.PRECOMPUTE_ERROR) != null && counts.get(EventType.PRECOMPUTE_ERROR) > 0) {
-                    break;
+            try {
+                Message message = MessageQueue.shared().findMessage(session, (int) remote, (int) index, msgType);
+                if (message != null) {
+                    result = message.getMsgData();
+                    MessageQueue.shared().removeMessage(session, (int) remote, (int) index, msgType);
+                    found = true;
                 }
+                if (new Date().getTime() > now.getTime() + 5000 && !found) { // 5 second wait max
+                    System.out.println("Failed to receive message in reasonable time");
+                    break;
+                } else {
+                    Map<EventType, Integer> counts = EventQueue.shared().countEvents(session);
+                    if (counts.get(EventType.PRECOMPUTE_ERROR) != null && counts.get(EventType.PRECOMPUTE_ERROR) > 0) {
+                        break;
+                    }
+                }
+            } catch(Exception _e) {
+                // no-op, result goes back empty
             }
         }
         return result;
