@@ -7,22 +7,19 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.web3auth.tss_client_android.TSSmessages.Secp256k1;
+import com.web3auth.tss_client_android.client.Base64;
 import com.web3auth.tss_client_android.client.SECP256K1;
 import com.web3auth.tss_client_android.client.TSSClient;
 import com.web3auth.tss_client_android.client.TSSHelpers;
 import com.web3auth.tss_client_android.dkls.DKLSError;
 import com.web3auth.tss_client_android.dkls.Precompute;
 
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.DERSequence;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.web3j.crypto.ECKeyPair;
-import org.web3j.crypto.Sign;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -34,9 +31,9 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -83,27 +80,23 @@ public class TssClientTests {
         return privateKeys;
     }
 
-    private List<String> getSignatures() throws IOException {
-        Map<String, Object> tokenData = new HashMap<>();
+    private List<String> getSignatures() {
+        LinkedHashMap<String, Object> tokenData = new LinkedHashMap<>();
         tokenData.put("exp", new Date().getTime() + 3000 * 60);
         tokenData.put("temp_key_x", "test_key_x");
         tokenData.put("temp_key_y", "test_key_y");
         tokenData.put("verifier_name", "test_verifier_name");
         tokenData.put("verifier_id", "test_verifier_id");
 
-        String token = Base64.getEncoder().encodeToString(gson.toJson(tokenData).getBytes());
+        String token = Base64.encodeBytes(gson.toJson(tokenData).getBytes(StandardCharsets.UTF_8));
 
         List<String> sigs = new ArrayList<>();
         for (String privKey : getPrivateKeys()) {
             byte[] hash = TSSHelpers.hashMessage(token.getBytes(StandardCharsets.UTF_8));
-            Sign.SignatureData signature = Sign.signPrefixedMessage(hash, ECKeyPair.create(hexStringToByteArray(privKey)));
-            ASN1EncodableVector v = new ASN1EncodableVector();
-            v.add(new ASN1Integer(signature.getR()));
-            v.add(new ASN1Integer(signature.getS()));
-            DERSequence der = new DERSequence(v);
-            byte[] sigBytes = der.getEncoded();
-            String sig = Utils.convertByteToHexadecimal(sigBytes);
-            Map<String, Object> msg = new HashMap<>();
+            Secp256k1.ECDSASignature ecdsaSignature = Secp256k1.Sign(hash, hexStringToByteArray(privKey));
+            //Sign.SignatureData signature = Sign.signPrefixedMessage(hash, ECKeyPair.create(hexStringToByteArray(privKey)));
+            String sig = TSSHelpers.bytesToHex(ecdsaSignature.r.toByteArray()) +  TSSHelpers.bytesToHex(ecdsaSignature.s.toByteArray()) + String.format("%02X", ecdsaSignature.v);
+            LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
             msg.put("data", token);
             msg.put("sig", sig);
             String jsonData = gson.toJson(msg);

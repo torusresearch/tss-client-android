@@ -28,7 +28,7 @@ public class TSSSocket {
         try {
             IO.Options options = IO.Options.builder()
                     //.setPath("/tss/socket.io")
-                    .setQuery(session.split("default0")[1])
+                    .setQuery(session.split(Delimiters.Delimiter4)[1])
                     .setTransports(new String[]{WebSocket.NAME})
                     //.setSecure(true)
                     .setReconnectionDelayMax(10000)
