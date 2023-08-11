@@ -6,6 +6,7 @@ import androidx.core.util.Pair;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.web3auth.tss_client_android.client.SECP256K1;
 import com.web3auth.tss_client_android.client.TSSClient;
 import com.web3auth.tss_client_android.client.TSSHelpers;
@@ -195,14 +196,14 @@ public class TssClientTests {
                             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                             conn.setRequestMethod("POST");
                             conn.setRequestProperty("Content-Type", "application/json");
-                            conn.setRequestProperty("x-web3-session-id", session);
+                            conn.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
 
                             String json = "{\"session\":\"" + session + "\",\"share\":\"" + share.toString() + "\"}";
-                            byte[] postData = json.getBytes(StandardCharsets.UTF_8);
-
+                            Gson gson = new Gson();
+                            JsonObject data = gson.fromJson(json, JsonObject.class);
                             conn.setDoOutput(true);
                             try (OutputStream os = conn.getOutputStream()) {
-                                os.write(postData);
+                                os.write(data.toString().getBytes(StandardCharsets.UTF_8));
                             }
 
                             int responseCode = conn.getResponseCode();
@@ -267,9 +268,9 @@ public class TssClientTests {
         BigInteger random = randomKey.add(BigInteger.valueOf(System.currentTimeMillis() / 1000));
         String randomNonce = TSSHelpers.bytesToHex(TSSHelpers.hashMessage(random.toByteArray()));
         String testingRouteIdentifier = "testingShares";
-        String vid = "test_verifier_name" + "test_verifier_id";
+        String vid = "test_verifier_name" + Delimiters.Delimiter1 + "test_verifier_id";
         String session = testingRouteIdentifier +
-                vid + "default" + "0" + randomNonce +
+                vid + Delimiters.Delimiter2 + "default" + Delimiters.Delimiter3 + "0"+  Delimiters.Delimiter4 + randomNonce +
                 testingRouteIdentifier;
         System.out.println("session:" + session);
         List<String> sigs = getSignatures();
