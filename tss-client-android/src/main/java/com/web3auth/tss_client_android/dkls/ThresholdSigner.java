@@ -1,7 +1,7 @@
 package com.web3auth.tss_client_android.dkls;
 
 public final class ThresholdSigner {
-    private long pointer;
+    private final long pointer;
 
     public ThresholdSigner(String session, int playerIndex, int parties, int threshold, String share, String publicKey) throws DKLSError {
         DKLSError dklsError = new DKLSError();
@@ -19,8 +19,12 @@ public final class ThresholdSigner {
 
     private native void jniThresholdSignerFree();
 
-    public boolean setup(ChaChaRng rng, DKLSComm comm) {
-        boolean result = jniThresholdSignerSetup(rng, comm, new DKLSError());
+    public boolean setup(ChaChaRng rng, DKLSComm comm) throws DKLSError {
+        DKLSError dklsError = new DKLSError();
+        boolean result = jniThresholdSignerSetup(rng, comm,dklsError);
+        if (dklsError.code != 0) {
+            throw dklsError;
+        }
         return result;
     }
 

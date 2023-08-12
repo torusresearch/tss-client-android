@@ -99,11 +99,11 @@ public class TSSClient {
         }
     }
 
-    private boolean setup() {
+    private boolean setup() throws DKLSError {
         return signer.setup(rng, comm);
     }
 
-    public Precompute precompute(Map<String, String> serverCoeffs, List<String> signatures) throws TSSClientError {
+    public Precompute precompute(Map<String, String> serverCoeffs, List<String> signatures) throws TSSClientError, DKLSError {
         EventQueue.shared().updateFocus(new Date());
         for (int i = 0; i < parties; i++) {
             if (i != index) {

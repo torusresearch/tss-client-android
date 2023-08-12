@@ -16,15 +16,15 @@ import java.util.Base64;
 
 public final class ChaChaRng {
     private final long pointer;
+
     @RequiresApi(api = Build.VERSION_CODES.O) // TODO: Compatibility with older versions
     public ChaChaRng() throws DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
         DKLSError dklsError = new DKLSError();
         BigInteger privKey = SECP256K1.generatePrivateKey();
-        byte[] stateBytes = Arrays.copyOfRange(privKey.toByteArray(), 1, privKey.toByteArray().length);
+        byte[] privateKeyBytes = privKey.toByteArray();
+        byte[] stateBytes = (privateKeyBytes.length > 32) ? Arrays.copyOfRange(privateKeyBytes, privKey.toByteArray().length - 32, privKey.toByteArray().length) :
+            privateKeyBytes;
         System.out.println(stateBytes.length);
-        if (stateBytes == null) {
-            throw new DKLSError("Error generating random bytes for generator initialization");
-        }
         // convert bytes to base64
         String state = Base64.getEncoder().encodeToString(stateBytes); // This requires Build.VERSION_CODES.O
         long ptr = jniChaChaRng(state, dklsError);

@@ -1,7 +1,7 @@
 package com.web3auth.tss_client_android.dkls;
 
 public final class SignatureFragments {
-    private long pointer;
+    private final long pointer;
 
     private native long jniSignatureFragmentsFromString(String input, DKLSError dklsError);
 

@@ -38,6 +38,7 @@ const char* readMsgCallback(const char* session, unsigned long long int index, u
     auto jparent_ref = reinterpret_cast<jobject>(handler);
     auto index_bytes = getBytesFromUnsignedLongLong(jniEnv, index);
     auto remote_bytes = getBytesFromUnsignedLongLong(jniEnv, remote);
+
     auto result = (jstring) jniEnv->CallObjectMethod(
             jparent_ref,
             readMsgCallbackID,
@@ -67,13 +68,11 @@ bool sendMsgCallback(const char* session, unsigned long long int index, unsigned
     auto remote_bytes = getBytesFromUnsignedLongLong(jniEnv, remote);
 
     auto jparent_ref = reinterpret_cast<jobject>(handler);
-    auto result = (jstring) jniEnv->CallObjectMethod(
+    auto result = jniEnv->CallBooleanMethod(
             jparent_ref,
             sendMsgCallbackID,
             jsession, index_bytes, remote_bytes, jmsgType, jmsgData);
-    bool res = result;
-    jniEnv->DeleteLocalRef(result);
-    return res;
+    return result;
 
 }
 

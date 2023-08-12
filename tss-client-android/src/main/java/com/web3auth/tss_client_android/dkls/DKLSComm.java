@@ -14,10 +14,9 @@ import com.web3auth.tss_client_android.client.TSSSocket;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 public final class DKLSComm {
-    private long pointer;
+    private final long pointer;
 
     @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
     private String readMsg(String session, byte[] index_bytes, byte[] remote_bytes, String msgType) {
@@ -89,8 +88,8 @@ public final class DKLSComm {
         DKLSError dklsError = new DKLSError();
         long result = jniDklsComm(index, parties, session,
                 "readMsg",
-                "(Ljava/lang/String;[I[ILjava/lang/String;)Ljava/lang/String;", "sendMsg",
-                "(Ljava/lang/String;[I[ILjava/lang/String;Ljava/lang/String;)Z", dklsError);
+                "(Ljava/lang/String;[B[BLjava/lang/String;)Ljava/lang/String;", "sendMsg",
+                "(Ljava/lang/String;[B[BLjava/lang/String;Ljava/lang/String;)Z", dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
         }

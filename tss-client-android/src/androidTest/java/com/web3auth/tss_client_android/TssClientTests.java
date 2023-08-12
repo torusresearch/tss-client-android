@@ -242,8 +242,9 @@ public class TssClientTests {
                 endPoints.add(null);
                 tssWSEndpoints.add(null);
             } else {
-                endPoints.add("http://192.168.1.11:" + (basePort + serverPortOffset));
-                tssWSEndpoints.add("http://192.168.1.11:" + (basePort + serverPortOffset));
+                // https://developer.android.com/studio/run/emulator-networking.html
+                endPoints.add("http://10.0.2.2:" + (basePort + serverPortOffset));
+                tssWSEndpoints.add("http://10.0.2.2:" + (basePort + serverPortOffset));
                 serverPortOffset++;
             }
         }

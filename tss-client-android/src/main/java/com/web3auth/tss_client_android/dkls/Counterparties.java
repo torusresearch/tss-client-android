@@ -1,7 +1,7 @@
 package com.web3auth.tss_client_android.dkls;
 
 public final class Counterparties {
-    private long pointer;
+    private final long pointer;
 
     private native long jniCounterparties_From_String(String parties, DKLSError error);
 

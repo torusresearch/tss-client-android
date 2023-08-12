@@ -1,7 +1,7 @@
 package com.web3auth.tss_client_android.dkls;
 
 public final class Precompute {
-    private long pointer;
+    private final long pointer;
 
     public Precompute(String precompute) throws DKLSError {
         DKLSError dklsError = new DKLSError();
@@ -24,8 +24,7 @@ public final class Precompute {
         if (dklsError.code != 0) {
             throw dklsError;
         }
-        String value = new String(result);
-        return value;
+        return result;
     }
 
     public String getR() throws DKLSError {
@@ -34,8 +33,7 @@ public final class Precompute {
         if (dklsError.code != 0) {
             throw dklsError;
         }
-        String value = new String(result);
-        return value;
+        return result;
     }
 
     @Override
