@@ -11,6 +11,7 @@ import com.web3auth.tss_client_android.client.TSSConnectionInfo;
 import com.web3auth.tss_client_android.client.TSSEndpoint;
 import com.web3auth.tss_client_android.client.TSSSocket;
 
+import java.math.BigInteger;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -19,20 +20,23 @@ public final class DKLSComm {
     private long pointer;
 
     @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
-    private String readMsg(String session, int index, int remote, String msgType) {
+    private String readMsg(String session, byte[] index_bytes, byte[] remote_bytes, String msgType) {
         if ("ga1_worker_support".equals(msgType)) {
             return "not supported";
         }
+
+        BigInteger index = new BigInteger(1, index_bytes);
+        BigInteger remote = new BigInteger(1, remote_bytes);
 
         boolean found = false;
         Date now = new Date();
         String result = "";
         while (!found) {
             try {
-                Message message = MessageQueue.shared().findMessage(session, (int) remote, (int) index, msgType);
+                Message message = MessageQueue.shared().findMessage(session, remote.intValue(), index.intValue(), msgType);
                 if (message != null) {
                     result = message.getMsgData();
-                    MessageQueue.shared().removeMessage(session, (int) remote, (int) index, msgType);
+                    MessageQueue.shared().removeMessage(session, remote.intValue(), index.intValue(), msgType);
                     found = true;
                 }
                 if (new Date().getTime() > now.getTime() + 5000 && !found) { // 5 second wait max
@@ -52,15 +56,18 @@ public final class DKLSComm {
     }
 
     @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
-    private boolean sendMsg(String session, int index, int remote, String  msgType, String msgData) {
+    private boolean sendMsg(String session, byte[] index_bytes, byte[] remote_bytes, String  msgType, String msgData) {
         try {
-            Pair<TSSEndpoint, TSSSocket> tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(session, (int) remote);
+            BigInteger index = new BigInteger(1, index_bytes);
+            BigInteger remote = new BigInteger(1, remote_bytes);
+
+            Pair<TSSEndpoint, TSSSocket> tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(session, remote.intValue());
             TSSSocket tsssocket = tssConnection.second;
             String[] msgTypeParts = msgType.split("~");
             if (msgTypeParts.length >= 2) {
                 String tag = msgTypeParts[1];
                 System.out.println("dkls: Sending message " + tag + ", sender: " + index + ", receiver: " + remote);
-                TssSendMsg msg = new TssSendMsg(session, (int) index, (int) remote, msgType, msgData);
+                TssSendMsg msg = new TssSendMsg(session, index.intValue(), remote.intValue(), msgType, msgData);
                 if (tsssocket != null && tsssocket.getSocket() != null) {
                     System.out.println("socket send websocket: " + tsssocket.getSocket().id() + ": " + index + "->" + remote + ", " + msgType);
                     tsssocket.getSocket().emit("send_msg", msg);
@@ -82,8 +89,8 @@ public final class DKLSComm {
         DKLSError dklsError = new DKLSError();
         long result = jniDklsComm(index, parties, session,
                 "readMsg",
-                "(Ljava/lang/String;IILjava/lang/String;)Ljava/lang/String;", "sendMsg",
-                "(Ljava/lang/String;IILjava/lang/String;Ljava/lang/String;)Z", dklsError);
+                "(Ljava/lang/String;[I[ILjava/lang/String;)Ljava/lang/String;", "sendMsg",
+                "(Ljava/lang/String;[I[ILjava/lang/String;Ljava/lang/String;)Z", dklsError);
         if (dklsError.code != 0) {
             throw dklsError;
         }

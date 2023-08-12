@@ -36,10 +36,12 @@ const char* readMsgCallback(const char* session, unsigned long long int index, u
     dkls_string_free(const_cast<char*>(msg_type));
 
     auto jparent_ref = reinterpret_cast<jobject>(handler);
+    auto index_bytes = getBytesFromUnsignedLongLong(jniEnv, index);
+    auto remote_bytes = getBytesFromUnsignedLongLong(jniEnv, remote);
     auto result = (jstring) jniEnv->CallObjectMethod(
             jparent_ref,
             readMsgCallbackID,
-            jsession, index, remote, jmsgType);
+            jsession, index_bytes, remote_bytes, jmsgType);
     char *res = const_cast<char *>(jniEnv->GetStringUTFChars(result, JNI_FALSE));
     jniEnv->DeleteLocalRef(result);
     return res;
@@ -61,11 +63,14 @@ bool sendMsgCallback(const char* session, unsigned long long int index, unsigned
     jstring jmsgData = jniEnv->NewStringUTF(msg_data);
     dkls_string_free(const_cast<char*>(msg_data));
 
+    auto index_bytes = getBytesFromUnsignedLongLong(jniEnv, index);
+    auto remote_bytes = getBytesFromUnsignedLongLong(jniEnv, remote);
+
     auto jparent_ref = reinterpret_cast<jobject>(handler);
     auto result = (jstring) jniEnv->CallObjectMethod(
             jparent_ref,
             sendMsgCallbackID,
-            jsession, index, remote, jmsgType, jmsgData);
+            jsession, index_bytes, remote_bytes, jmsgType, jmsgData);
     bool res = result;
     jniEnv->DeleteLocalRef(result);
     return res;
