@@ -3,8 +3,6 @@ package com.web3auth.tss_client_android.client;
 import static com.web3auth.tss_client_android.client.AES256CBC.bytesToHex;
 
 import android.os.Build;
-
-import androidx.annotation.RequiresApi;
 import androidx.core.util.Pair;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -59,9 +57,8 @@ public class TSSClient {
     private final boolean ready = false;
     private final String pubKey;
     private boolean consumed = false;
-    private boolean _sLessThanHalf = true;
+    private final boolean _sLessThanHalf = true;
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
     public TSSClient(String session, long index, int[] parties, String[] endpoints,
                      String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, ExecutionException, InterruptedException {
         if (parties.length != tssSocketEndpoints.length) {
@@ -99,7 +96,7 @@ public class TSSClient {
         }
     }
 
-    private boolean setup() throws DKLSError {
+    private boolean setup() {
         return signer.setup(rng, comm);
     }
 
@@ -135,7 +132,7 @@ public class TSSClient {
                     List<String> endpointStrings = new ArrayList<>();
                     List<TSSEndpoint> endpoints = TSSConnectionInfo.getShared().allEndpoints(session);
                     for (TSSEndpoint endpoint : endpoints) {
-                        endpointStrings.add(endpoint.getUrl().toString());
+                        endpointStrings.add(endpoint.getUrl());
                     }
                     endpointStrings.add("websocket:" + socketID);
                     endpointStrings.add((int) index, "websocket:" + tssConnection.second.getSocket().id());
@@ -227,7 +224,7 @@ public class TSSClient {
             for (int i = 0; i < precomputesComplete; i++) {
                 if (i != index) {
                     TSSEndpoint tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(session, (int) i).first;
-                    String urlStr = tssConnection.getUrl().toString() + "/sign";
+                    String urlStr = tssConnection.getUrl() + "/sign";
                     URL url = new URL(urlStr);
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("POST");
@@ -308,6 +305,7 @@ public class TSSClient {
     }
 
     public boolean isReady() throws TSSClientError {
+        // TODO: Add timeout here
         try {
             Map<EventType, Integer> counts = EventQueue.shared().countEvents(session);
             Integer precomputeErrorCount = counts.getOrDefault(EventType.PRECOMPUTE_ERROR, 0);
@@ -325,6 +323,7 @@ public class TSSClient {
     }
 
     public boolean checkConnected() {
+        // TODO: Add timeout here
         int connections = 0;
         List<Integer> connectedParties = new ArrayList<>();
 

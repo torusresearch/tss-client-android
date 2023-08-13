@@ -1,6 +1,8 @@
 package com.web3auth.tss_client_android.dkls;
 
 public final class Counterparties {
+    //Note: Linter cannot detect jni usage of this variable, hence the need to supress warnings
+    @SuppressWarnings("all")
     private final long pointer;
 
     private native long jniCounterparties_From_String(String parties, DKLSError error);

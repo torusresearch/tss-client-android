@@ -23,12 +23,10 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.math.ec.FixedPointCombMultiplier;
 import org.bouncycastle.math.ec.FixedPointUtil;
 import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
-import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 
 public class Secp256k1 {
@@ -236,8 +234,8 @@ public class Secp256k1 {
 
         /**
          *t
-         * @param r
-         * @param s
+         * @param r R component of signature
+         * @param s S component of signature
          * @return -
          */
         private static ECDSASignature fromComponents(byte[] r, byte[] s) {
@@ -281,9 +279,7 @@ public class Secp256k1 {
             if (isLessThan(s, BigInteger.ONE)) return false;
 
             if (!isLessThan(r, SECP256K1N)) return false;
-            if (!isLessThan(s, SECP256K1N)) return false;
-
-            return true;
+            return isLessThan(s, SECP256K1N);
         }
 
         private static boolean isLessThan(BigInteger valueA, BigInteger valueB){
@@ -291,9 +287,7 @@ public class Secp256k1 {
         }
 
         public static ECDSASignature decodeFromDER(byte[] bytes) {
-            ASN1InputStream decoder = null;
-            try {
-                decoder = new ASN1InputStream(bytes);
+            try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
                 DLSequence seq = (DLSequence) decoder.readObject();
                 if (seq == null)
                     throw new RuntimeException("Reached past end of ASN.1 stream.");
@@ -309,9 +303,6 @@ public class Secp256k1 {
                 return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue());
             } catch (IOException e) {
                 throw new RuntimeException(e);
-            } finally {
-                if (decoder != null)
-                    try { decoder.close(); } catch (IOException x) {}
             }
         }
 
@@ -346,7 +337,7 @@ public class Secp256k1 {
             sigData[0] = v;
             System.arraycopy(ByteUtils.BigIntegerToBytes(this.r, 32), 0, sigData, 1, 32);
             System.arraycopy(ByteUtils.BigIntegerToBytes(this.s, 32), 0, sigData, 33, 32);
-            return new String(Base64.encode(sigData), Charset.forName("UTF-8"));
+            return android.util.Base64.encodeToString(sigData, android.util.Base64.DEFAULT);
         }
 
         public byte[] toByteArray() {
@@ -372,9 +363,7 @@ public class Secp256k1 {
             ECDSASignature signature = (ECDSASignature) o;
 
             if (!r.equals(signature.r)) return false;
-            if (!s.equals(signature.s)) return false;
-
-            return true;
+            return s.equals(signature.s);
         }
 
         @Override

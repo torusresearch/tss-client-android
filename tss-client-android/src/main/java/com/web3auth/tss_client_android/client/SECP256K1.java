@@ -34,7 +34,7 @@ public class SECP256K1 {
     private static final String CURVE_N = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141";
     public static final BigInteger modulusValueUnsigned = new BigInteger(CURVE_N, 16);
     public static final BigInteger modulusValueSigned = new BigInteger(CURVE_N, 16);
-    private static SecureRandom random = new SecureRandom();
+    private static final SecureRandom random = new SecureRandom();
 
     {
         setupBouncyCastle();

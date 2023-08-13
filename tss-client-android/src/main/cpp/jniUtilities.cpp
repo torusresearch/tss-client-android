@@ -9,7 +9,8 @@
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsBatchSize(JNIEnv *env, jclass clazz,jthrowable dkls_error) {
+Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsBatchSize(JNIEnv *env,
+                                                                       __attribute__((unused)) jclass clazz,jthrowable dkls_error) {
     int errorCode = 0;
     int *error_ptr = &errorCode;
     int result = dkls_batch_size(error_ptr);
@@ -19,7 +20,8 @@ Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsBatchSize(JNIEnv *e
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsHashEncode(JNIEnv *env, jclass clazz,jstring msg,jthrowable dkls_error) {
+Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsHashEncode(JNIEnv *env,
+                                                                        __attribute__((unused)) jclass clazz,jstring msg,jthrowable dkls_error) {
     int errorCode = 0;
     int *error_ptr = &errorCode;
     const char *pMsg = env->GetStringUTFChars(msg, JNI_FALSE);
@@ -34,7 +36,8 @@ Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsHashEncode(JNIEnv *
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsLocalSign(JNIEnv *env, jclass clazz, jstring msg, jboolean hash_only, jstring precompute,jthrowable dkls_error) {
+Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsLocalSign(JNIEnv *env,
+                                                                       __attribute__((unused)) jclass clazz, jstring msg, jboolean hash_only, jstring precompute,jthrowable dkls_error) {
     int errorCode = 0;
     int *error_ptr = &errorCode;
     const char *pPrecompute = env->GetStringUTFChars(precompute, JNI_FALSE);
@@ -50,7 +53,8 @@ Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsLocalSign(JNIEnv *e
 
 extern "C"
 JNIEXPORT jstring  JNICALL
-Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsLocalVerify(JNIEnv *env, jclass clazz,jstring msg, jboolean hash_only, jstring r, jobject sig_frags, jstring pk, jthrowable dkls_error) {
+Java_com_web3auth_tss_1client_1android_dkls_Utilities_jniDklsLocalVerify(JNIEnv *env,
+                                                                         __attribute__((unused)) jclass clazz,jstring msg, jboolean hash_only, jstring r, jobject sig_frags, jstring pk, jthrowable dkls_error) {
     int errorCode = 0;
     int *error_ptr = &errorCode;
 

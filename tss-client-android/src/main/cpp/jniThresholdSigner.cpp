@@ -9,8 +9,14 @@
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_web3auth_tss_1client_1android_dkls_ThresholdSigner_jniThresholdSigner(JNIEnv *env, jobject thiz, jstring session, jint player_index, jint parties,
-                                                                               jint threshold, jstring share, jstring pk, jthrowable dkls_error) {
+Java_com_web3auth_tss_1client_1android_dkls_ThresholdSigner_jniThresholdSigner(JNIEnv *env,
+                                                                               __attribute__((unused)) jobject thiz,
+                                                                               jstring session, jint player_index,
+                                                                               jint parties,
+                                                                               jint threshold,
+                                                                               jstring share,
+                                                                               jstring pk,
+                                                                               jthrowable dkls_error) {
     int errorCode = 0;
     int *error_ptr = &errorCode;
     const char *pSession = env->GetStringUTFChars(session, JNI_FALSE);
@@ -26,7 +32,7 @@ Java_com_web3auth_tss_1client_1android_dkls_ThresholdSigner_jniThresholdSigner(J
 
 extern "C"
 JNIEXPORT jboolean JNICALL
-Java_com_web3auth_tss_1client_1android_dkls_ThresholdSigner_jniThresholdSignerSetup(JNIEnv *env,jobject thiz,jobject chacha,jobject dkls_comm, jthrowable dkls_error) {
+Java_com_web3auth_tss_1client_1android_dkls_ThresholdSigner_jniThresholdSignerSetup(JNIEnv *env,jobject thiz,jobject chacha, jobject dkls_comm) {
     jlong pSigner = GetPointerField(env, thiz);
     auto signer = reinterpret_cast<ThresholdSigner *>(pSigner);
     jlong pRng = GetPointerField(env, chacha);

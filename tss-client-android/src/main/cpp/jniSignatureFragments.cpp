@@ -11,7 +11,8 @@
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_web3auth_tss_1client_1android_dkls_SignatureFragments_jniSignatureFragmentsFromString(
-        JNIEnv *env, jobject thiz, jstring input, jthrowable dkls_error) {
+        JNIEnv *env, __attribute__((unused)) jobject thiz,
+        jstring input, jthrowable dkls_error) {
     int errorCode = 0;
     int *error_ptr = &errorCode;
     const char *pInput = env->GetStringUTFChars(input, JNI_FALSE);

@@ -11,7 +11,7 @@
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_web3auth_tss_1client_1android_dkls_Precompute_jniPrecomputeFromString(JNIEnv *env,
-                                                                               jobject thiz,
+                                                                               __attribute__((unused)) jobject thiz,
                                                                                jstring parties,
                                                                                jthrowable error) {
     int errorCode = 0;

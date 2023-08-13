@@ -1,6 +1,8 @@
 package com.web3auth.tss_client_android.dkls;
 
 public final class SignatureFragments {
+    //Note: Linter cannot detect jni usage of this variable, hence the need to supress warnings
+    @SuppressWarnings("all")
     private final long pointer;
 
     private native long jniSignatureFragmentsFromString(String input, DKLSError dklsError);

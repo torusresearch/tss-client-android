@@ -9,7 +9,8 @@
 
 extern "C"
 JNIEXPORT jlong JNICALL
-Java_com_web3auth_tss_1client_1android_dkls_ChaChaRng_jniChaChaRng(JNIEnv *env, jobject thiz,
+Java_com_web3auth_tss_1client_1android_dkls_ChaChaRng_jniChaChaRng(JNIEnv *env,
+                                                                   __attribute__((unused)) jobject thiz,
                                                                    jstring state,
                                                                    jthrowable error) {
     int errorCode = 0;

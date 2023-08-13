@@ -108,8 +108,7 @@ public class Utils {
             throw new IllegalArgumentException("party " + party + " not found in parties " + parties);
         }
 
-        BigInteger denormaliseLagrangeCoeff = getLagrangeCoeffs(parties.toArray(new BigInteger[0]), party).modInverse(secp256k1N);
-        return denormaliseLagrangeCoeff;
+        return getLagrangeCoeffs(parties.toArray(new BigInteger[0]), party).modInverse(secp256k1N);
     }
 
     public static BigInteger getDKLSCoeff(boolean isUser, List<BigInteger> participatingServerIndexes,
@@ -140,11 +139,12 @@ public class Utils {
 
         BigInteger coeff;
         if (isUser) {
-            BigInteger additiveCoeff = getAdditiveCoeff(isUser, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
+            BigInteger additiveCoeff = getAdditiveCoeff(true, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
             BigInteger denormaliseCoeff = getDenormaliseCoeff(userPartyIndex, parties);
             return denormaliseCoeff.multiply(additiveCoeff).mod(secp256k1N);
         }
-        BigInteger additiveCoeff = getAdditiveCoeff(isUser, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
+
+        BigInteger additiveCoeff = getAdditiveCoeff(false, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
         BigInteger denormaliseCoeff = getDenormaliseCoeff(BigInteger.valueOf(serverPartyIndex), parties);
         coeff = denormaliseCoeff.multiply(additiveCoeff).mod(secp256k1N);
         return coeff;
@@ -218,17 +218,15 @@ public class Utils {
     }
 
     public static String convertByteToHexadecimal(byte[] byteArray) {
-        String hex = "";
+        StringBuilder hex = new StringBuilder();
         for (byte i : byteArray) {
-            hex += String.format("%02X", i);
+            hex.append(String.format("%02X", i));
         }
-        return hex;
+        return hex.toString();
     }
 
     public static void ClearBytes(byte[] data) {
-        for (int i = 0; i < data.length; i++) {
-            data[i] = 0;
-        }
+        Arrays.fill(data, (byte) 0);
     }
 
     public static SecureRandom SecureRandom() {

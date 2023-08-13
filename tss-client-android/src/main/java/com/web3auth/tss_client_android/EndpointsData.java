@@ -3,9 +3,9 @@ package com.web3auth.tss_client_android;
 import java.util.List;
 
 public class EndpointsData {
-    private List<String> endpoints;
-    private List<String> tssWSEndpoints;
-    private List<Integer> partyIndexes;
+    private final List<String> endpoints;
+    private final List<String> tssWSEndpoints;
+    private final List<Integer> partyIndexes;
 
     public EndpointsData(List<String> endpoints, List<String> tssWSEndpoints, List<Integer> partyIndexes) {
         this.endpoints = endpoints;

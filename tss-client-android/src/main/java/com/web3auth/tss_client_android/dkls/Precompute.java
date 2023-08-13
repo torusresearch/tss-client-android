@@ -1,6 +1,9 @@
 package com.web3auth.tss_client_android.dkls;
 
 public final class Precompute {
+
+    //Note: Linter cannot detect jni usage of this variable, hence the need to supress warnings
+    @SuppressWarnings("all")
     private final long pointer;
 
     public Precompute(String precompute) throws DKLSError {

@@ -17,7 +17,7 @@ public class TSSSocket {
     private final int party;
     private final String socketURL;
     private Socket socket;
-    private Map<String, String> headers;
+    private final Map<String, String> headers;
 
     public TSSSocket(String session, int party, String socketURL) {
         this.session = session;

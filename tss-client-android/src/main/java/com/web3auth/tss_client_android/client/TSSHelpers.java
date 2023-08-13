@@ -55,9 +55,7 @@ public class TSSHelpers {
         System.arraycopy(shareBytes, Math.max(0, shareBytes.length - 32), last32Bytes, 0, length);
 
         // Base64 encode the last 32 bytes
-        String base64Encoded;
-        base64Encoded = Base64.getEncoder().encodeToString(last32Bytes);
-        return base64Encoded;
+        return android.util.Base64.encodeToString(last32Bytes, android.util.Base64.DEFAULT);
     }
 
     public static String base64PublicKey(byte[] pubKey) throws TSSClientError {
@@ -65,14 +63,15 @@ public class TSSHelpers {
             if (pubKey[0] == 0) {
                 byte[] trimmedKey = new byte[pubKey.length - 1];
                 System.arraycopy(pubKey, 1, trimmedKey, 0, trimmedKey.length);
-                return Base64.getEncoder().encodeToString(trimmedKey);
+                return android.util.Base64.encodeToString(trimmedKey, android.util.Base64.DEFAULT);
             } else {
                 throw new TSSClientError("Invalid public key bytes");
             }
         }
 
         if (pubKey.length == 64) {
-            return Base64.getEncoder().encodeToString(pubKey);
+            return android.util.Base64.encodeToString(pubKey, android.util.Base64.DEFAULT);
+
         }
 
         throw new TSSClientError("Invalid public key bytes");

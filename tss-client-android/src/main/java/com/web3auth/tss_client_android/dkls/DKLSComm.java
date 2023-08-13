@@ -16,6 +16,8 @@ import java.util.Date;
 import java.util.Map;
 
 public final class DKLSComm {
+    //Note: Linter cannot detect jni usage of this variable, hence the need to supress warnings
+    @SuppressWarnings("all")
     private final long pointer;
 
     @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI

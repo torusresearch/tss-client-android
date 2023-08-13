@@ -10,7 +10,7 @@
 extern "C"
 JNIEXPORT jlong JNICALL
 Java_com_web3auth_tss_1client_1android_dkls_Counterparties_jniCounterparties_1From_1String(
-        JNIEnv *env, jobject thiz, jstring parties, jthrowable error) {
+        JNIEnv *env, __attribute__((unused)) jobject thiz, jstring parties, jthrowable error) {
     int errorCode = 0;
     int *error_ptr = &errorCode;
     const char *pParties = env->GetStringUTFChars(parties, JNI_FALSE);

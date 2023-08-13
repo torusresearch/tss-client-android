@@ -59,7 +59,7 @@ public class TssClientTests {
 
     private static String session = "";
     private static BigInteger share = new BigInteger("0");
-    private Gson gson = new Gson();
+    private final Gson gson = new Gson();
 
     @BeforeClass
     public static void setupTest() {
