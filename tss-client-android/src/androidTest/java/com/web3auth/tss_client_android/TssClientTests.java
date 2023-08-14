@@ -285,7 +285,7 @@ public class TssClientTests {
             byte[] suffix = new byte[Math.min(32, serializedCoeff.length)];
             System.arraycopy(serializedCoeff, Math.max(0, serializedCoeff.length - 32), suffix, 0, suffix.length);
             String hexString = TSSHelpers.byteArrayToHexString(suffix);
-            coeffs.put(String.valueOf(i), hexString);
+            coeffs.put(String.valueOf(participatingServerDKGIndexes[i]), hexString);
         }
 
         TSSClient client;
