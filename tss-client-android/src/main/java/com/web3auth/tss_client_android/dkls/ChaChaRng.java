@@ -1,10 +1,13 @@
 package com.web3auth.tss_client_android.dkls;
+import android.util.Base64;
+
 import com.web3auth.tss_client_android.client.SECP256K1;
 import org.bouncycastle.util.Arrays;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.util.stream.Stream;
 
 public final class ChaChaRng {
     //Note: Linter cannot detect jni usage of this variable, hence the need to supress warnings
@@ -18,7 +21,7 @@ public final class ChaChaRng {
         byte[] stateBytes = (privateKeyBytes.length > 32) ? Arrays.copyOfRange(privateKeyBytes, privKey.toByteArray().length - 32, privKey.toByteArray().length) :
             privateKeyBytes;
         // convert bytes to base64
-        String state = android.util.Base64.encodeToString(stateBytes, android.util.Base64.DEFAULT);
+        String state = android.util.Base64.encodeToString(stateBytes, Base64.NO_WRAP);
         long ptr = jniChaChaRng(state, dklsError);
         if (dklsError.code != 0) {
             throw dklsError;

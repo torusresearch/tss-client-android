@@ -1,5 +1,7 @@
 package com.web3auth.tss_client_android.client;
 
+import android.util.Base64;
+
 import com.web3auth.tss_client_android.DELIMITERS;
 
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
@@ -16,7 +18,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +56,7 @@ public class TSSHelpers {
         System.arraycopy(shareBytes, Math.max(0, shareBytes.length - 32), last32Bytes, 0, length);
 
         // Base64 encode the last 32 bytes
-        return android.util.Base64.encodeToString(last32Bytes, android.util.Base64.DEFAULT);
+        return android.util.Base64.encodeToString(last32Bytes, Base64.NO_WRAP);
     }
 
     public static String base64PublicKey(byte[] pubKey) throws TSSClientError {
@@ -63,14 +64,14 @@ public class TSSHelpers {
             if (pubKey[0] == 0) {
                 byte[] trimmedKey = new byte[pubKey.length - 1];
                 System.arraycopy(pubKey, 1, trimmedKey, 0, trimmedKey.length);
-                return android.util.Base64.encodeToString(trimmedKey, android.util.Base64.DEFAULT);
+                return android.util.Base64.encodeToString(trimmedKey, Base64.NO_WRAP);
             } else {
                 throw new TSSClientError("Invalid public key bytes");
             }
         }
 
         if (pubKey.length == 64) {
-            return android.util.Base64.encodeToString(pubKey, android.util.Base64.DEFAULT);
+            return android.util.Base64.encodeToString(pubKey, Base64.NO_WRAP);
 
         }
 
