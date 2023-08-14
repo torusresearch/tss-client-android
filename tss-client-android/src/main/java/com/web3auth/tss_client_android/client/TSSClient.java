@@ -2,11 +2,12 @@ package com.web3auth.tss_client_android.client;
 
 import static com.web3auth.tss_client_android.client.AES256CBC.bytesToHex;
 
-import android.os.Build;
 import androidx.core.util.Pair;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.web3auth.tss_client_android.DELIMITERS;
 import com.web3auth.tss_client_android.Utils;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
@@ -34,6 +35,7 @@ import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -126,6 +128,9 @@ public class TSSClient {
                     URL url = new URL(urlStr);
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("POST");
+                    connection.setRequestProperty("Access-Control-Allow-Origin", "*");
+                    connection.setRequestProperty("Access-Control-Allow-Methods", "GET, POST");
+                    connection.setRequestProperty("Access-Control-Allow-Headers", "Content-Type");
                     connection.setRequestProperty("Content-Type", "application/json");
                     connection.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
 
@@ -134,10 +139,9 @@ public class TSSClient {
                     for (TSSEndpoint endpoint : endpoints) {
                         endpointStrings.add(endpoint.getUrl());
                     }
-                    endpointStrings.add("websocket:" + socketID);
                     endpointStrings.add((int) index, "websocket:" + tssConnection.second.getSocket().id());
 
-                    Map<String, Object> msg = new HashMap<>();
+                    LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
                     msg.put("endpoints", endpointStrings);
                     msg.put("session", session);
                     List<Integer> partiesList = new ArrayList<>();
@@ -154,9 +158,11 @@ public class TSSClient {
                     msg.put("signatures", signatures);
 
                     String jsonData = new ObjectMapper().writeValueAsString(msg);
+                    Gson gson = new Gson();
+                    JsonObject data = gson.fromJson(jsonData, JsonObject.class);
                     connection.setDoOutput(true);
                     try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
-                        out.writeBytes(jsonData);
+                        out.write(data.toString().getBytes(StandardCharsets.UTF_8));
                         out.flush();
                     }
 

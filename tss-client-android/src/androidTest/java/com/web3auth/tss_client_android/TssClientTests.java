@@ -279,13 +279,13 @@ public class TssClientTests {
 
         Map<String, String> coeffs = new HashMap<>();
         int[] participatingServerDKGIndexes = {1, 2, 3};
-        for (int i = 0; i < participatingServerDKGIndexes.length; i++) {
+        for (int i = 0; i <= participatingServerDKGIndexes.length; i++) {
             BigInteger coeff = BigInteger.ONE; // Initialize to 1
             byte[] serializedCoeff = coeff.toByteArray(); // Serialize the BigInteger
             byte[] suffix = new byte[Math.min(32, serializedCoeff.length)];
             System.arraycopy(serializedCoeff, Math.max(0, serializedCoeff.length - 32), suffix, 0, suffix.length);
             String hexString = TSSHelpers.byteArrayToHexString(suffix);
-            coeffs.put(String.valueOf(participatingServerDKGIndexes[i]), hexString);
+            coeffs.put(String.valueOf(i), hexString);
         }
 
         TSSClient client;
