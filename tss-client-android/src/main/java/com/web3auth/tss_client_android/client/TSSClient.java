@@ -141,7 +141,7 @@ public class TSSClient {
                     for (TSSEndpoint endpoint : endpoints) {
                         endpointStrings.add(local_servers ? endpoint.getUrl().replace("10.0.2.2","localhost") : endpoint.getUrl());
                     }
-                    endpointStrings.add((int) index, "websocket:" + tssConnection.second.getSocket().id());
+                    endpointStrings.add((int) index, "websocket:" + socketID);
 
                     LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
                     msg.put("endpoints", endpointStrings);

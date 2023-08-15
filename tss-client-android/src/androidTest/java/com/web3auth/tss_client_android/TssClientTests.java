@@ -192,12 +192,16 @@ public class TssClientTests {
                             conn.setRequestProperty("Content-Type", "application/json");
                             conn.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
 
-                            String json = "{\"session\":\"" + session + "\",\"share\":\"" + share.toString() + "\"}";
+                            String b64Share = android.util.Base64.encodeToString(share.toByteArray(), android.util.Base64.NO_WRAP);
+                            LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
+                            msg.put("session", session);
+                            msg.put("share", b64Share);
+
                             Gson gson = new Gson();
-                            JsonObject data = gson.fromJson(json, JsonObject.class);
+                            byte[] data = gson.toJson(msg).getBytes(StandardCharsets.UTF_8);
                             conn.setDoOutput(true);
                             try (OutputStream os = conn.getOutputStream()) {
-                                os.write(data.toString().getBytes(StandardCharsets.UTF_8));
+                                os.write(data);
                             }
 
                             int responseCode = conn.getResponseCode();
