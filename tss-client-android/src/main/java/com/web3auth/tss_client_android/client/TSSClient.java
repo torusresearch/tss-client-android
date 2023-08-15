@@ -8,7 +8,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.web3auth.tss_client_android.Delimiters;
 import com.web3auth.tss_client_android.Utils;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;

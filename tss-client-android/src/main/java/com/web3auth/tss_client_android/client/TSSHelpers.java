@@ -2,8 +2,6 @@ package com.web3auth.tss_client_android.client;
 
 import android.util.Base64;
 
-import com.web3auth.tss_client_android.Delimiters;
-
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
