@@ -1,4 +1,6 @@
-package com.web3auth.tss_client_android.client;
+package com.web3auth.tss_client_android.client.util;
+
+import com.web3auth.tss_client_android.client.TorusException;
 
 import java.math.BigInteger;
 import java.security.Key;

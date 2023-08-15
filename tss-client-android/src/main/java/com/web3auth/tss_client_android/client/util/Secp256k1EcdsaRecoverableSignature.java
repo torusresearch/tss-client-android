@@ -1,4 +1,4 @@
-package com.web3auth.tss_client_android.client;
+package com.web3auth.tss_client_android.client.util;
 
 public class Secp256k1EcdsaRecoverableSignature {
 

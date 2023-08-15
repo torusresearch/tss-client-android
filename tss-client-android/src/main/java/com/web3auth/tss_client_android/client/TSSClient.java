@@ -1,6 +1,6 @@
 package com.web3auth.tss_client_android.client;
 
-import static com.web3auth.tss_client_android.client.AES256CBC.bytesToHex;
+import static com.web3auth.tss_client_android.client.util.AES256CBC.bytesToHex;
 
 import androidx.core.util.Pair;
 
@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.web3auth.tss_client_android.client.util.Base64;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;
 import com.web3auth.tss_client_android.dkls.DKLSComm;
