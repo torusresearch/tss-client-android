@@ -33,7 +33,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -238,7 +237,7 @@ public class TSSClient {
                     connection.setRequestProperty("Content-Type", "application/json");
                     connection.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
 
-                    Map<String, Object> msg = new HashMap<>();
+                    LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
                     msg.put("session", session);
                     msg.put("sender", index);
                     msg.put("recipient", i);
@@ -249,9 +248,10 @@ public class TSSClient {
                     msg.put("signatures", signatures);
 
                     String jsonData = new ObjectMapper().writeValueAsString(msg);
+                    JsonObject data = new Gson().fromJson(jsonData, JsonObject.class);
                     connection.setDoOutput(true);
                     try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
-                        out.writeBytes(jsonData);
+                        out.write(data.toString().getBytes(StandardCharsets.UTF_8));
                         out.flush();
                     }
 
@@ -375,13 +375,15 @@ public class TSSClient {
                 connection.setRequestProperty("Content-Type", "application/json");
                 connection.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
 
-                Map<String, Object> msg = new HashMap<>();
+                LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
                 msg.put("session", session);
                 msg.put("signatures", signatures);
 
+                Gson gson = new Gson();
+                byte[] data = gson.toJson(msg).getBytes(StandardCharsets.UTF_8);
                 connection.setDoOutput(true);
                 OutputStream out = connection.getOutputStream();
-                out.write(new ObjectMapper().writeValueAsBytes(msg));
+                out.write(data);
 
                 int responseCode = connection.getResponseCode();
                 if (responseCode != 200) {
