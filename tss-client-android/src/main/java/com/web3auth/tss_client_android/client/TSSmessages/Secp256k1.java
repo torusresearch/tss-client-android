@@ -1,4 +1,4 @@
-package com.web3auth.tss_client_android.TSSmessages;
+package com.web3auth.tss_client_android.client.TSSmessages;
 
 import android.util.Base64;
 

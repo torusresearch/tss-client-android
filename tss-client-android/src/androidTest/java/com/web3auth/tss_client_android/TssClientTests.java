@@ -6,8 +6,7 @@ import androidx.core.util.Pair;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.web3auth.tss_client_android.TSSmessages.Secp256k1;
+import com.web3auth.tss_client_android.client.TSSmessages.Secp256k1;
 import com.web3auth.tss_client_android.client.Base64;
 import com.web3auth.tss_client_android.client.SECP256K1;
 import com.web3auth.tss_client_android.client.TSSClient;

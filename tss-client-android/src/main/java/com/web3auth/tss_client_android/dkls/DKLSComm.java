@@ -2,7 +2,7 @@ package com.web3auth.tss_client_android.dkls;
 
 import androidx.core.util.Pair;
 
-import com.web3auth.tss_client_android.TSSmessages.TssSendMsg;
+import com.web3auth.tss_client_android.client.TSSmessages.TssSendMsg;
 import com.web3auth.tss_client_android.client.EventQueue;
 import com.web3auth.tss_client_android.client.EventType;
 import com.web3auth.tss_client_android.client.Message;
