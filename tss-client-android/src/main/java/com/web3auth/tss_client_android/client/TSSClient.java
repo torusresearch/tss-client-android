@@ -103,6 +103,7 @@ public class TSSClient {
     }
 
     public Precompute precompute(Map<String, String> serverCoeffs, List<String> signatures) throws TSSClientError, DKLSError {
+        boolean local_servers = System.getProperty("LOCAL_SERVERS") != null;
         EventQueue.shared().updateFocus(new Date());
         for (int i = 0; i < parties; i++) {
             if (i != index) {
@@ -134,10 +135,11 @@ public class TSSClient {
                     connection.setRequestProperty("Content-Type", "application/json");
                     connection.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
 
+
                     List<String> endpointStrings = new ArrayList<>();
                     List<TSSEndpoint> endpoints = TSSConnectionInfo.getShared().allEndpoints(session);
                     for (TSSEndpoint endpoint : endpoints) {
-                        endpointStrings.add(endpoint.getUrl());
+                        endpointStrings.add(local_servers ? endpoint.getUrl().replace("10.0.2.2","localhost") : endpoint.getUrl());
                     }
                     endpointStrings.add((int) index, "websocket:" + tssConnection.second.getSocket().id());
 

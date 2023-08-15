@@ -64,6 +64,7 @@ public class TssClientTests {
     @BeforeClass
     public static void setupTest() {
         SECP256K1.setupBouncyCastle();
+        System.setProperty("LOCAL_SERVERS", String.valueOf(true));
     }
 
     @AfterClass
