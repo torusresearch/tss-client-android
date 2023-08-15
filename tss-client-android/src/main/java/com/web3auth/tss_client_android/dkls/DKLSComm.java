@@ -71,7 +71,7 @@ public final class DKLSComm {
                 TssSendMsg msg = new TssSendMsg(session, index.intValue(), remote.intValue(), msgType, msgData);
                 if (tsssocket != null && tsssocket.getSocket() != null) {
                     System.out.println("socket send websocket: " + tsssocket.getSocket().id() + ": " + index + "->" + remote + ", " + msgType);
-                    tsssocket.getSocket().emit("send_msg", msg);
+                    tsssocket.getSocket().emit("send_msg", msg.toJsonObject());
                     return true;
                 }
             }
