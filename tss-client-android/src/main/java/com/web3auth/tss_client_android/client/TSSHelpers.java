@@ -2,7 +2,7 @@ package com.web3auth.tss_client_android.client;
 
 import android.util.Base64;
 
-import com.web3auth.tss_client_android.DELIMITERS;
+import com.web3auth.tss_client_android.Delimiters;
 
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.math.ec.ECCurve;
@@ -337,10 +337,10 @@ public class TSSHelpers {
     }
 
     public static String assembleFullSession(String verifier, String verifierId, String tssTag, String tssNonce, String sessionNonce) {
-        String fullSession = verifier + DELIMITERS.Delimiter1 +
-                verifierId + DELIMITERS.Delimiter2 +
-                tssTag + DELIMITERS.Delimiter3 +
-                tssNonce + DELIMITERS.Delimiter4 +
+        String fullSession = verifier + Delimiters.Delimiter1 +
+                verifierId + Delimiters.Delimiter2 +
+                tssTag + Delimiters.Delimiter3 +
+                tssNonce + Delimiters.Delimiter4 +
                 sessionNonce;
 
         return fullSession;

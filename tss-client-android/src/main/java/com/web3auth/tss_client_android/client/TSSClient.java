@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.web3auth.tss_client_android.DELIMITERS;
+import com.web3auth.tss_client_android.Delimiters;
 import com.web3auth.tss_client_android.Utils;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;
@@ -90,7 +90,7 @@ public class TSSClient {
     }
 
     public static String sid(String session) {
-        String[] sessionParts = session.split(String.valueOf(DELIMITERS.Delimiter4));
+        String[] sessionParts = session.split(String.valueOf(Delimiters.Delimiter4));
         if (sessionParts.length >= 2) {
             return sessionParts[1];
         } else {
