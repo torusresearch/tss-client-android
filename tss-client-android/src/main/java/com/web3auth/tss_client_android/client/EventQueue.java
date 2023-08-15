@@ -5,7 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,7 +14,8 @@ public final class EventQueue {
     // Singleton instance
     private static final EventQueue shared = new EventQueue();
 
-    private final List<Event> events = new CopyOnWriteArrayList<>();
+    //private final List<Event> events = new CopyOnWriteArrayList<>();
+    private final ConcurrentLinkedQueue<Event> events = new ConcurrentLinkedQueue<>();
     private final ExecutorService queueExecutor = Executors.newCachedThreadPool();
     private Date lastFocus = new Date();
 

@@ -2,7 +2,7 @@ package com.web3auth.tss_client_android.client;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -11,7 +11,7 @@ public final class MessageQueue {
     // Singleton instance
     private static final MessageQueue shared = new MessageQueue();
 
-    private final List<Message> messages = new CopyOnWriteArrayList<>();
+    private final ConcurrentLinkedQueue<Message> messages = new ConcurrentLinkedQueue<>();
     private final ExecutorService queueExecutor = Executors.newCachedThreadPool();
 
     // Private constructor to prevent external instantiation

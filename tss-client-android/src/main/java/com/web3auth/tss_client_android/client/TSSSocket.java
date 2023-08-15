@@ -1,5 +1,7 @@
 package com.web3auth.tss_client_android.client;
 
+import com.web3auth.tss_client_android.BuildConfig;
+
 import org.json.JSONObject;
 
 import java.net.URI;
@@ -26,15 +28,26 @@ public class TSSSocket {
         this.headers = new HashMap<>();
 
         try {
-            IO.Options options = IO.Options.builder()
-                    //.setPath("/tss/socket.io")
-                    .setQuery(session.split(Delimiters.Delimiter4)[1])
-                    .setTransports(new String[]{WebSocket.NAME})
-                    //.setSecure(true)
-                    .setReconnectionDelayMax(10000)
-                    .setReconnectionAttempts(3)
-                    .setForceNew(true)
-                    .build();
+            IO.Options options;
+            if(BuildConfig.DEBUG) {
+                options = IO.Options.builder()
+                        .setQuery(session.split(Delimiters.Delimiter4)[1])
+                        .setTransports(new String[]{WebSocket.NAME})
+                        .setReconnectionDelayMax(10000)
+                        .setReconnectionAttempts(3)
+                        .setForceNew(true)
+                        .build();
+            } else {
+                options = IO.Options.builder()
+                        .setPath("/tss/socket.io")
+                        .setQuery(session.split(Delimiters.Delimiter4)[1])
+                        .setTransports(new String[]{WebSocket.NAME})
+                        .setSecure(true)
+                        .setReconnectionDelayMax(10000)
+                        .setReconnectionAttempts(3)
+                        .setForceNew(true)
+                        .build();
+            }
             socket = IO.socket(URI.create(socketURL), options);
         } catch (Exception e) {
             e.printStackTrace();
