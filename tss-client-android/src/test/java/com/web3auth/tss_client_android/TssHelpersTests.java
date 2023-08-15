@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.web3auth.tss_client_android.client.TSSClientError;
 import com.web3auth.tss_client_android.client.TSSHelpers;
+import com.web3auth.tss_client_android.client.Utils;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Test;

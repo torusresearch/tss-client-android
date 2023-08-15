@@ -2,8 +2,8 @@ package com.web3auth.tss_client_android.client.TSSmessages;
 
 import android.util.Base64;
 
-import com.web3auth.tss_client_android.ByteUtils;
-import com.web3auth.tss_client_android.Utils;
+import com.web3auth.tss_client_android.client.ByteUtils;
+import com.web3auth.tss_client_android.client.Utils;
 
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;

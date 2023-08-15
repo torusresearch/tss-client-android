@@ -1,4 +1,4 @@
-package com.web3auth.tss_client_android;
+package com.web3auth.tss_client_android.client;
 
 import org.bouncycastle.util.encoders.Base64;
 
