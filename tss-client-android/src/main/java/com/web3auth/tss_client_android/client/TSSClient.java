@@ -1,6 +1,6 @@
 package com.web3auth.tss_client_android.client;
 
-import static com.web3auth.tss_client_android.client.util.AES256CBC.bytesToHex;
+import android.util.Base64;
 
 import androidx.core.util.Pair;
 
@@ -8,7 +8,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.web3auth.tss_client_android.client.util.Base64;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;
 import com.web3auth.tss_client_android.dkls.DKLSComm;
@@ -88,7 +87,7 @@ public class TSSClient {
     }
 
     public static String sid(String session) {
-        String[] sessionParts = session.split(String.valueOf(Delimiters.Delimiter4));
+        String[] sessionParts = session.split(Delimiters.Delimiter4);
         if (sessionParts.length >= 2) {
             return sessionParts[1];
         } else {
@@ -212,9 +211,10 @@ public class TSSClient {
 
             String signingMessage = "";
 
+            // TODO: Bug here
             if (hashOnly) {
                 if (originalMessage != null) {
-                    String hashedMessage = bytesToHex(TSSHelpers.hashMessage(originalMessage.getBytes(StandardCharsets.UTF_8)));
+                    String hashedMessage = String.format("%02x", TSSHelpers.hashMessage(originalMessage.getBytes(StandardCharsets.UTF_8)));
                     if (!hashedMessage.equals(message)) {
                         throw new TSSClientError("hash of original message does not match message");
                     }
@@ -280,8 +280,8 @@ public class TSSClient {
             String signature = verifyWithPrecompute(signingMessage, hashOnly, precompute, sigFrags, pubKey);
 
             String precompute_r = precompute.getR();
-            byte[] decoded_r = Base64.decode(precompute_r);
-            byte[] decoded = Base64.decode(signature);
+            byte[] decoded_r = android.util.Base64.decode(precompute_r, Base64.NO_WRAP);
+            byte[] decoded = android.util.Base64.decode(signature, Base64.NO_WRAP);
             String sighex = Utils.convertByteToHexadecimal(decoded);
             BigInteger r = new BigInteger(sighex.substring(0, 64), 16);
             BigInteger s = new BigInteger(sighex.substring(64), 16);

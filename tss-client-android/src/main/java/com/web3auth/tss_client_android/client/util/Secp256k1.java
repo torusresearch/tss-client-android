@@ -6,7 +6,9 @@ import com.web3auth.tss_client_android.client.Utils;
 
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DLSequence;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -75,6 +77,24 @@ public class Secp256k1 {
         return point.getEncoded(false);
     }
 
+    public static ECPoint parsePublicKey(byte[] serializedKey) throws IOException {
+        int keyLen = serializedKey.length;
+        if (keyLen != 33 && keyLen != 65) {
+            return null;
+        }
+
+        SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(
+                ASN1Sequence.getInstance(serializedKey));
+        byte[] otherEncoded = subjectPublicKeyInfo.parsePublicKey().getEncoded();
+
+        byte[] keyBytes = Arrays.copyOf(serializedKey, keyLen);
+        if (keyLen == 65 && keyBytes[0] == 0x04) {
+            keyBytes = Arrays.copyOfRange(keyBytes, 1, keyLen);
+        }
+
+        return CURVE.getCurve().decodePoint(keyBytes);
+    }
+
     public static byte[] RecoverPubBytesFromSignature(byte[] data, byte[] sign) {
         if (data.length != 32) {
             throw new IllegalArgumentException("Expected 32 byte input to ECDSA recover, not " + data.length);
@@ -103,6 +123,27 @@ public class Secp256k1 {
         byte[] compEnc = x9.integerToBytes(xBN, 1 + x9.getByteLength(CURVE.getCurve()));
         compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
         return CURVE.getCurve().decodePoint(compEnc);
+    }
+
+    public static ECPoint ecdh(ECPoint pubKey, byte[] privateKey) {
+        if (privateKey.length != 32) {
+            return null;
+        }
+
+        ECPrivateKeyParameters privateKeyParams = new ECPrivateKeyParameters(new BigInteger(privateKey), CURVE);
+        ECPublicKeyParameters publicKeyParams = new ECPublicKeyParameters(pubKey, CURVE);
+
+        FixedPointCombMultiplier multiplier = new FixedPointCombMultiplier();
+        ECPoint result = multiplier.multiply(publicKeyParams.getQ(), privateKeyParams.getD());
+        return result;
+    }
+
+    public static ECPoint combinePublicKeys(ECPoint[] keys) {
+        ECPoint result = CURVE.getCurve().getInfinity();
+        for (ECPoint point : keys) {
+            result = result.add(point);
+        }
+        return result;
     }
 
     private static byte[] recoverPubBytesFromSignature(int recId, ECDSASignature sig, byte[] messageHash) {

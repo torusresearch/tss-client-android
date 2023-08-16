@@ -7,14 +7,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.gson.Gson;
 import com.web3auth.tss_client_android.client.EndpointsData;
+import com.web3auth.tss_client_android.client.TSSClientError;
 import com.web3auth.tss_client_android.client.util.Secp256k1;
-import com.web3auth.tss_client_android.client.util.Base64;
-import com.web3auth.tss_client_android.client.SECP256K1;
 import com.web3auth.tss_client_android.client.TSSClient;
 import com.web3auth.tss_client_android.client.TSSHelpers;
 import com.web3auth.tss_client_android.dkls.DKLSError;
 import com.web3auth.tss_client_android.dkls.Precompute;
 
+import org.java_websocket.util.Base64;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -56,14 +56,11 @@ public class TssClientTests {
     }
 
     private final List<String> privateKeys = new ArrayList<>();
-
-    private static String session = "";
     private static BigInteger share = new BigInteger("0");
     private final Gson gson = new Gson();
 
     @BeforeClass
     public static void setupTest() {
-        SECP256K1.setupBouncyCastle();
         System.setProperty("LOCAL_SERVERS", String.valueOf(true));
     }
 
@@ -89,7 +86,7 @@ public class TssClientTests {
         tokenData.put("verifier_name", "test_verifier_name");
         tokenData.put("verifier_id", "test_verifier_id");
 
-        String token = Base64.encodeBytes(gson.toJson(tokenData).getBytes(StandardCharsets.UTF_8));
+        String token = android.util.Base64.encodeToString(gson.toJson(tokenData).getBytes(StandardCharsets.UTF_8),android.util.Base64.NO_WRAP);
 
         List<String> sigs = new ArrayList<>();
         for (String privKey : getPrivateKeys()) {
@@ -128,14 +125,14 @@ public class TssClientTests {
 
             if (!party.equals(otherParty)) {
                 BigInteger otherPartyIndexNeg = otherPartyIndex.negate();
-                upper = upper.multiply(otherPartyIndexNeg).mod(SECP256K1.modulusValueSigned);
-                BigInteger temp = partyIndex.subtract(otherPartyIndex).mod(SECP256K1.modulusValueSigned);
-                lower = lower.multiply(temp).mod(SECP256K1.modulusValueSigned);
+                upper = upper.multiply(otherPartyIndexNeg).mod(Secp256k1.CURVE.getN());
+                BigInteger temp = partyIndex.subtract(otherPartyIndex).mod(Secp256k1.CURVE.getN());
+                lower = lower.multiply(temp).mod(Secp256k1.CURVE.getN());
             }
         }
 
-        BigInteger lowerInverse = lower.modInverse(SECP256K1.modulusValueSigned);
-        BigInteger delta = upper.multiply(lowerInverse).mod(SECP256K1.modulusValueSigned);
+        BigInteger lowerInverse = lower.modInverse(Secp256k1.CURVE.getN());
+        BigInteger delta = upper.multiply(lowerInverse).mod(Secp256k1.CURVE.getN());
         return delta;
     }
 
@@ -145,18 +142,18 @@ public class TssClientTests {
         BigInteger shareSum = BigInteger.ZERO;
 
         for (int i = 0; i < parties.size() - 1; i++) {
-            byte[] shareBytes = SECP256K1.generatePrivateKey().toByteArray();
+            byte[] shareBytes = Secp256k1.GenerateECKey();
             BigInteger shareBigInt = new BigInteger(1, shareBytes);
             additiveShares.add(shareBigInt);
             shareSum = shareSum.add(shareBigInt);
         }
 
-        BigInteger finalShare = privKey.subtract(shareSum.mod(SECP256K1.modulusValueSigned))
-                .mod(SECP256K1.modulusValueSigned);
+        BigInteger finalShare = privKey.subtract(shareSum.mod(Secp256k1.CURVE.getN()))
+                .mod(Secp256k1.CURVE.getN());
         additiveShares.add(finalShare);
 
         BigInteger reduced = additiveShares.stream().reduce(BigInteger.ZERO, BigInteger::add)
-                .mod(SECP256K1.modulusValueSigned);
+                .mod(Secp256k1.CURVE.getN());
         Assert.assertEquals(reduced.toString(16), privKey.toString(16));
 
         List<BigInteger> shares = new ArrayList<>();
@@ -167,8 +164,8 @@ public class TssClientTests {
                 partiesBigInt[j] = BigInteger.valueOf(parties.get(j));
             }
 
-            BigInteger coeffInverse = lagrange(partiesBigInt, BigInteger.valueOf(i)).modInverse(SECP256K1.modulusValueSigned);
-            BigInteger denormalizedShare = additiveShare.multiply(coeffInverse).mod(SECP256K1.modulusValueSigned);
+            BigInteger coeffInverse = lagrange(partiesBigInt, BigInteger.valueOf(i)).modInverse(Secp256k1.CURVE.getN());
+            BigInteger denormalizedShare = additiveShare.multiply(coeffInverse).mod(Secp256k1.CURVE.getN());
             shares.add(denormalizedShare);
         }
 
@@ -179,7 +176,6 @@ public class TssClientTests {
 
             if (i == localClientIndex) {
                 share = _share;
-                session = _session;
             } else {
                 String endpoint = endpoints.get(i);
                 if (endpoint != null) {
@@ -190,11 +186,11 @@ public class TssClientTests {
                             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                             conn.setRequestMethod("POST");
                             conn.setRequestProperty("Content-Type", "application/json");
-                            conn.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
+                            conn.setRequestProperty("x-web3-session-id", TSSClient.sid(_session));
 
                             String b64Share = android.util.Base64.encodeToString(share.toByteArray(), android.util.Base64.NO_WRAP);
                             LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
-                            msg.put("session", session);
+                            msg.put("session", _session);
                             msg.put("share", b64Share);
 
                             Gson gson = new Gson();
@@ -228,8 +224,9 @@ public class TssClientTests {
     }
 
     private static Pair<BigInteger, BigInteger> setupMockShares(List<String> endpoints, List<Integer> parties, int localClientIndex, String session) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, IOException, InterruptedException {
-        BigInteger privKey = SECP256K1.generatePrivateKey();
-        BigInteger publicKey = SECP256K1.privateToPublic(privKey.toString(16));
+        byte[] pk = Secp256k1.GenerateECKey();
+        BigInteger privKey = new BigInteger(pk);
+        BigInteger publicKey = new BigInteger(Secp256k1.PublicFromPrivateKey(pk));
 
         distributeShares(privKey, parties, endpoints, localClientIndex, session);
         return new Pair(privKey, publicKey);
@@ -257,13 +254,13 @@ public class TssClientTests {
     }
 
     @Test
-    public void testExample() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, IOException, DKLSError, InterruptedException {
+    public void testExample() throws Exception, DKLSError {
         int parties = 4;
         String msg = "hello world";
         byte[] msgHash = TSSHelpers.hashMessage(msg.getBytes(StandardCharsets.UTF_8));
         int clientIndex = parties - 1;
 
-        BigInteger randomKey = SECP256K1.generatePrivateKey();
+        BigInteger randomKey = new BigInteger(Secp256k1.GenerateECKey());
         BigInteger random = randomKey.add(BigInteger.valueOf(System.currentTimeMillis() / 1000));
         String randomNonce = TSSHelpers.bytesToHex(TSSHelpers.hashMessage(random.toByteArray()));
         String testingRouteIdentifier = "testingShares";
@@ -294,7 +291,7 @@ public class TssClientTests {
         }
 
         TSSClient client;
-        try {
+       // try {
             client = new TSSClient(session, clientIndex, partyIndexes.stream().mapToInt(Integer::intValue).toArray(),
                     endpoints.toArray(new String[0]), socketEndpoints.toArray(new String[0]),
                     TSSHelpers.base64Share(share), TSSHelpers.base64PublicKey(publicKey.toByteArray()));
@@ -314,14 +311,14 @@ public class TssClientTests {
             String pubKey = TSSHelpers.recoverPublicKey(TSSHelpers.bytesToHex(msgHash), signatureResult.getFirst(),
                     signatureResult.getSecond(), signatureResult.getThird());
             String pkHex65 = pubKey;
-            BigInteger skToPkHex = SECP256K1.privateToPublic(privateKey.toString(16));
+            BigInteger skToPkHex = new BigInteger(Secp256k1.PublicFromPrivateKey(privateKey.toByteArray()));
             assertEquals(pkHex65, skToPkHex.toString(16));
             System.out.println(pkHex65.equals(skToPkHex.toString(16)));
 
             System.out.println("Signature (hex): " + TSSHelpers.hexSignature(signatureResult.getFirst(),
                     signatureResult.getSecond(), signatureResult.getThird()));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+       // } catch (Exception e) {
+        //    e.printStackTrace();
+       // }
     }
 }

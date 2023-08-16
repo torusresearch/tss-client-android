@@ -2,6 +2,8 @@ package com.web3auth.tss_client_android.client;
 
 import android.util.Base64;
 
+import com.web3auth.tss_client_android.client.util.Secp256k1;
+
 import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
@@ -59,13 +61,9 @@ public class TSSHelpers {
 
     public static String base64PublicKey(byte[] pubKey) throws TSSClientError {
         if (pubKey.length == 65) {
-            if (pubKey[0] == 0) {
                 byte[] trimmedKey = new byte[pubKey.length - 1];
                 System.arraycopy(pubKey, 1, trimmedKey, 0, trimmedKey.length);
                 return android.util.Base64.encodeToString(trimmedKey, Base64.NO_WRAP);
-            } else {
-                throw new TSSClientError("Invalid public key bytes");
-            }
         }
 
         if (pubKey.length == 64) {
@@ -154,14 +152,11 @@ public class TSSHelpers {
         byte[] serverLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(serverLagrangeCoefficient.toByteArray());
         byte[] userLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(userLagrangeCoefficient.toByteArray());
 
-        ECPoint serverTerm = SECP256K1.ecdh(parsedDkgPubKey, serverLagrangeCoeffData);
-        ECPoint userTerm = SECP256K1.ecdh(parsedUserSharePubKey, userLagrangeCoeffData);
+        ECPoint serverTerm = Secp256k1.ecdh(parsedDkgPubKey, serverLagrangeCoeffData);
+        ECPoint userTerm = Secp256k1.ecdh(parsedUserSharePubKey, userLagrangeCoeffData);
 
-        byte[] serializedServerTerm = serverTerm.getEncoded(false);
-        byte[] serializedUserTerm = userTerm.getEncoded(false);
-
-        byte[][] keys = new byte[][]{serializedServerTerm, serializedUserTerm};
-        ECPoint combined = SECP256K1.combineSerializedPublicKeys(keys);
+        ECPoint[] keys = new ECPoint[]{serverTerm, userTerm};
+        ECPoint combined = Secp256k1.combinePublicKeys(keys);
 
         return combined.getEncoded(false);
     }
@@ -170,8 +165,8 @@ public class TSSHelpers {
         BigInteger serverLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, BigInteger.ONE);
         BigInteger userLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, userTssIndex);
 
-        ECPoint serverTermUnprocessed = SECP256K1.parsePublicKey(dkgPubKey);
-        ECPoint userTermUnprocessed = SECP256K1.parsePublicKey(userSharePubKey);
+        ECPoint serverTermUnprocessed = Secp256k1.parsePublicKey(dkgPubKey);
+        ECPoint userTermUnprocessed = Secp256k1.parsePublicKey(userSharePubKey);
 
         if (serverTermUnprocessed == null || userTermUnprocessed == null) {
             throw new TSSClientError("InvalidPublicKey");
@@ -183,8 +178,8 @@ public class TSSHelpers {
         byte[] serverLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(serverLagrangeCoeff.toByteArray());
         byte[] userLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(userLagrangeCoeff.toByteArray());
 
-        ECPoint serverTermProcessed = SECP256K1.ecdh(serverTerm, serverLagrangeCoeffData);
-        ECPoint userTermProcessed = SECP256K1.ecdh(userTerm, userLagrangeCoeffData);
+        ECPoint serverTermProcessed = Secp256k1.ecdh(serverTerm, serverLagrangeCoeffData);
+        ECPoint userTermProcessed = Secp256k1.ecdh(userTerm, userLagrangeCoeffData);
 
         if (serverTermProcessed == null || userTermProcessed == null) {
             throw new TSSClientError("Failed to process server term");
@@ -193,20 +188,13 @@ public class TSSHelpers {
         serverTerm = serverTermProcessed;
         userTerm = userTermProcessed;
 
-        byte[] serializedServerTerm = SECP256K1.serializePublicKey(serverTerm, false);
-        byte[] serializedUserTerm = SECP256K1.serializePublicKey(userTerm, false);
-
-        if (serializedServerTerm == null || serializedUserTerm == null) {
-            throw new TSSClientError("Failed to process client term");
-        }
-
-        byte[] combination = SECP256K1.combineSerializedPublicKeys(new byte[][] { serializedServerTerm, serializedUserTerm }, false);
+        ECPoint combination = Secp256k1.combinePublicKeys(new ECPoint[] { serverTerm, userTerm });
 
         if (combination == null) {
             throw new TSSClientError("Failed to combine keys");
         }
 
-        return combination;
+        return combination.getEncoded(false);
     }
 
     private static byte[] ensureDataLengthIs32Bytes(byte[] data) {

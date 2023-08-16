@@ -7,7 +7,6 @@ import static org.junit.Assert.fail;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import com.web3auth.tss_client_android.client.SECP256K1;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;
 import com.web3auth.tss_client_android.dkls.DKLSError;
@@ -34,7 +33,6 @@ public class DklsTests {
 
     @BeforeClass
     public static void setupTest() {
-        SECP256K1.setupBouncyCastle();
     }
 
     @AfterClass
