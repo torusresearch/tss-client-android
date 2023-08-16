@@ -14,6 +14,7 @@ import com.web3auth.tss_client_android.client.TSSHelpers;
 import com.web3auth.tss_client_android.dkls.DKLSError;
 import com.web3auth.tss_client_android.dkls.Precompute;
 
+import org.java_websocket.exceptions.InvalidDataException;
 import org.java_websocket.util.Base64;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -225,7 +226,7 @@ public class TssClientTests {
 
     private static Pair<BigInteger, BigInteger> setupMockShares(List<String> endpoints, List<Integer> parties, int localClientIndex, String session) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, IOException, InterruptedException {
         byte[] pk = Secp256k1.GenerateECKey();
-        BigInteger privKey = new BigInteger(pk);
+        BigInteger privKey = new BigInteger(1, pk);
         BigInteger publicKey = new BigInteger(Secp256k1.PublicFromPrivateKey(pk));
 
         distributeShares(privKey, parties, endpoints, localClientIndex, session);
@@ -260,7 +261,7 @@ public class TssClientTests {
         byte[] msgHash = TSSHelpers.hashMessage(msg.getBytes(StandardCharsets.UTF_8));
         int clientIndex = parties - 1;
 
-        BigInteger randomKey = new BigInteger(Secp256k1.GenerateECKey());
+        BigInteger randomKey = new BigInteger(1, Secp256k1.GenerateECKey());
         BigInteger random = randomKey.add(BigInteger.valueOf(System.currentTimeMillis() / 1000));
         String randomNonce = TSSHelpers.bytesToHex(TSSHelpers.hashMessage(random.toByteArray()));
         String testingRouteIdentifier = "testingShares";
