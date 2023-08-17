@@ -7,15 +7,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.gson.Gson;
 import com.web3auth.tss_client_android.client.EndpointsData;
-import com.web3auth.tss_client_android.client.TSSClientError;
 import com.web3auth.tss_client_android.client.util.Secp256k1;
 import com.web3auth.tss_client_android.client.TSSClient;
 import com.web3auth.tss_client_android.client.TSSHelpers;
 import com.web3auth.tss_client_android.dkls.DKLSError;
 import com.web3auth.tss_client_android.dkls.Precompute;
-
-import org.java_websocket.exceptions.InvalidDataException;
-import org.java_websocket.util.Base64;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -33,10 +29,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -93,9 +87,7 @@ public class TssClientTests {
         for (String privKey : getPrivateKeys()) {
             byte[] hash = TSSHelpers.hashMessage(token.getBytes(StandardCharsets.UTF_8));
             Secp256k1.ECDSASignature ecdsaSignature = Secp256k1.Sign(hash, hexStringToByteArray(privKey));
-            //Sign.SignatureData signature = Sign.signPrefixedMessage(hash, ECKeyPair.create(hexStringToByteArray(privKey)));
-            String sig = TSSHelpers.bytesToHex(ecdsaSignature.r.toByteArray()) +  TSSHelpers.bytesToHex(ecdsaSignature.s.toByteArray()) + String.format("%02X", ecdsaSignature.v);
-            int length = sig.length();
+            String sig = ecdsaSignature.r.toString(16) +  ecdsaSignature.s.toString(16) + String.format("%02X", ecdsaSignature.v);
             LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
             msg.put("data", token);
             msg.put("sig", sig);
