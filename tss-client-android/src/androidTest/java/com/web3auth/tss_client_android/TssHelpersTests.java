@@ -12,7 +12,6 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +67,7 @@ public class TssHelpersTests {
         BigInteger userTssIndex = new BigInteger("100");
         BigInteger result = TSSHelpers.getDKLSCoefficient(true, List.of(participatingServerIndexes), userTssIndex, null);
         String expected = TSSHelpers.addLeadingZerosForLength64("a57eb50295fad40a57eb50295fad40a4ac66b301bc4dfafaaa8d2b05b28fae1");
-        assertEquals(expected, result.toString(16));
+        assertEquals(expected, TSSHelpers.addLeadingZerosForLength64(result.toString(16)));
     }
 
     @Test
