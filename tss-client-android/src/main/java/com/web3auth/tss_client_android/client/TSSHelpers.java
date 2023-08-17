@@ -8,11 +8,7 @@ import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
-import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.Hash;
-import org.web3j.crypto.Keys;
-import org.web3j.crypto.Sign;
-import org.web3j.utils.Numeric;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -296,5 +292,34 @@ public class TSSHelpers {
                 return "0";
             }
         }
+    }
+
+    public static String getClientCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
+        BigInteger coeff;
+        try {
+            coeff = getDKLSCoefficient(true, List.of(participatingServerDKGIndexes), userTssIndex, null);
+            return serializeToHexString(coeff);
+        } catch (Exception e) {
+            throw new TSSClientError(e.getMessage());
+        }
+    }
+
+    public static BigInteger denormalizeShare(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex, BigInteger userTssShare) throws TSSClientError {
+        try {
+            BigInteger coeff = getDKLSCoefficient(true, List.of(participatingServerDKGIndexes), userTssIndex, null);
+            BigInteger denormalizeShare = coeff.multiply(userTssShare).mod(TSSClient.modulusValueSigned);
+            return denormalizeShare;
+        } catch (Exception e) {
+            throw new TSSClientError(e.getMessage());
+        }
+    }
+
+    public static String serializeToHexString(BigInteger value) {
+        byte[] bytes = value.toByteArray();
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            hexString.append(String.format("%02X", b));
+        }
+        return hexString.toString();
     }
 }

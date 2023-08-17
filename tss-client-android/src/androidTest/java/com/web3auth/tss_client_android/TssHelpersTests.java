@@ -12,6 +12,7 @@ import org.junit.Test;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,11 +64,35 @@ public class TssHelpersTests {
         BigInteger comp = new BigInteger("955555555555555555555555555555549790ab8690ea5d782fe561d2241fa611", 16);
         assertTrue(coeff2.equals(comp));
 
-        BigInteger[] participatingServerIndexes = { new BigInteger("100"), new BigInteger("200") };
+        BigInteger[] participatingServerIndexes = {new BigInteger("100"), new BigInteger("200")};
         BigInteger userTssIndex = new BigInteger("100");
         BigInteger result = TSSHelpers.getDKLSCoefficient(true, List.of(participatingServerIndexes), userTssIndex, null);
         String expected = TSSHelpers.addLeadingZerosForLength64("a57eb50295fad40a57eb50295fad40a4ac66b301bc4dfafaaa8d2b05b28fae1");
         assertEquals(expected, TSSHelpers.addLeadingZerosForLength64(result.toString(16)));
+
+        //example related test
+        BigInteger coeff01 = TSSHelpers.getDKLSCoefficient(false, Arrays.asList(
+                new BigInteger("1"), new BigInteger("2"), new BigInteger("3")), new BigInteger("3"), new BigInteger("1"));
+        BigInteger coeff02 = TSSHelpers.getDKLSCoefficient(false, Arrays.asList(
+                new BigInteger("1"), new BigInteger("2"), new BigInteger("3")), new BigInteger("3"), new BigInteger("2"));
+        BigInteger coeff03 = TSSHelpers.getDKLSCoefficient(false, Arrays.asList(
+                new BigInteger("1"), new BigInteger("2"), new BigInteger("3")), new BigInteger("3"), new BigInteger("3"));
+        assert coeff01.equals(new BigInteger("00dffffffffffffffffffffffffffffffee3590149d95f8c3447d812bb362f791a", 16));
+        assert coeff02.equals(new BigInteger("003fffffffffffffffffffffffffffffffaeabb739abd2280eeff497a3340d9051", 16));
+        assert coeff03.equals(new BigInteger("009fffffffffffffffffffffffffffffff34ad4a102d8d642557e37b180221e8c9", 16));
+
+        BigInteger userCoeff2 = TSSHelpers.getDKLSCoefficient(true, Arrays.asList(
+                new BigInteger("1"), new BigInteger("2"), new BigInteger("3")), new BigInteger("2"), null);
+        BigInteger userCoeff3 = TSSHelpers.getDKLSCoefficient(true, Arrays.asList(
+                new BigInteger("1"), new BigInteger("2"), new BigInteger("3")), new BigInteger("3"), null);
+        assert userCoeff2.equals(new BigInteger("1", 16));
+        assert userCoeff3.equals(new BigInteger("007fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1", 16));
+
+        BigInteger[] participatingServerDKGIndexes = {new BigInteger("1"), new BigInteger("2"), new BigInteger("3")};
+        String userCoeff22 = TSSHelpers.getClientCoefficients(participatingServerDKGIndexes, new BigInteger("2"));
+        String userCoeff23 = TSSHelpers.getClientCoefficients(participatingServerDKGIndexes, new BigInteger("3"));
+        assert TSSHelpers.removeLeadingZeros(userCoeff22).equals("1");
+        assert TSSHelpers.removeLeadingZeros(userCoeff23).equals("7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A1");
     }
 
     @Test
