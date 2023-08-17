@@ -228,6 +228,9 @@ public class TSSClient {
                     URL url = new URL(urlStr);
                     HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("POST");
+                    connection.setRequestProperty("Access-Control-Allow-Origin", "*");
+                    connection.setRequestProperty("Access-Control-Allow-Methods", "GET, POST");
+                    connection.setRequestProperty("Access-Control-Allow-Headers", "Content-Type");
                     connection.setRequestProperty("Content-Type", "application/json");
                     connection.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
 
