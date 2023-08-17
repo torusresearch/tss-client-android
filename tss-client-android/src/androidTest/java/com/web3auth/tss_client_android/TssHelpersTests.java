@@ -13,6 +13,7 @@ import org.junit.Test;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -128,7 +129,7 @@ public class TssHelpersTests {
 
     @Test
     public void testGetServerCoefficients() throws TSSClientError {
-        Map<String, String> coefficients_index3 = new HashMap<>();
+        LinkedHashMap<String, String> coefficients_index3 = new LinkedHashMap<>();
         coefficients_index3.put("1", "1");
         coefficients_index3.put("2", "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1");
         coefficients_index3.put("4", "dffffffffffffffffffffffffffffffee3590149d95f8c3447d812bb362f7919");
@@ -140,7 +141,7 @@ public class TssHelpersTests {
 
         assertEquals(coefficients_index3, coeffs_index3);
 
-        Map<String, String> coefficients_index2 = new HashMap<>();
+        LinkedHashMap<String, String> coefficients_index2 = new LinkedHashMap<>();
         coefficients_index2.put("1", "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a2");
         coefficients_index2.put("2", "1");
         coefficients_index2.put("3", "7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1");

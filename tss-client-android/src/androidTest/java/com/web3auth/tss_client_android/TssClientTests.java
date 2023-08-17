@@ -95,6 +95,7 @@ public class TssClientTests {
             Secp256k1.ECDSASignature ecdsaSignature = Secp256k1.Sign(hash, hexStringToByteArray(privKey));
             //Sign.SignatureData signature = Sign.signPrefixedMessage(hash, ECKeyPair.create(hexStringToByteArray(privKey)));
             String sig = TSSHelpers.bytesToHex(ecdsaSignature.r.toByteArray()) +  TSSHelpers.bytesToHex(ecdsaSignature.s.toByteArray()) + String.format("%02X", ecdsaSignature.v);
+            int length = sig.length();
             LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
             msg.put("data", token);
             msg.put("sig", sig);
@@ -280,7 +281,7 @@ public class TssClientTests {
         BigInteger privateKey = shareRes.first;
         BigInteger publicKey = shareRes.second;
 
-        Map<String, String> coeffs = new HashMap<>();
+        LinkedHashMap<String, String> coeffs = new LinkedHashMap<>();
         int[] participatingServerDKGIndexes = {1, 2, 3};
         for (int i = 0; i <= participatingServerDKGIndexes.length; i++) {
             BigInteger coeff = BigInteger.ONE; // Initialize to 1

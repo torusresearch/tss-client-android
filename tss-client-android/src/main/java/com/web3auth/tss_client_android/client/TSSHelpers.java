@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -333,7 +334,7 @@ public class TSSHelpers {
     }
 
     public static Map<String, String> getServerCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
-        Map<String, String> serverCoeffs = new HashMap<>();
+        LinkedHashMap<String, String> serverCoeffs = new LinkedHashMap<>();
         for (int i = 0; i < participatingServerDKGIndexes.length; i++) {
             BigInteger participatingServerIndex = participatingServerDKGIndexes[i];
             BigInteger coefficient = TSSHelpers.getDKLSCoefficient(
