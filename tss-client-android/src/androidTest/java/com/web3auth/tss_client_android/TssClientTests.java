@@ -7,11 +7,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.gson.Gson;
 import com.web3auth.tss_client_android.client.EndpointsData;
-import com.web3auth.tss_client_android.client.util.Secp256k1;
 import com.web3auth.tss_client_android.client.TSSClient;
 import com.web3auth.tss_client_android.client.TSSHelpers;
+import com.web3auth.tss_client_android.client.util.Secp256k1;
 import com.web3auth.tss_client_android.dkls.DKLSError;
 import com.web3auth.tss_client_android.dkls.Precompute;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -28,6 +29,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -81,14 +83,14 @@ public class TssClientTests {
         tokenData.put("verifier_name", "test_verifier_name");
         tokenData.put("verifier_id", "test_verifier_id");
 
-        String token = android.util.Base64.encodeToString(gson.toJson(tokenData).getBytes(StandardCharsets.UTF_8),android.util.Base64.NO_WRAP);
+        String token = android.util.Base64.encodeToString(gson.toJson(tokenData).getBytes(StandardCharsets.UTF_8), android.util.Base64.NO_WRAP);
 
         List<String> sigs = new ArrayList<>();
         for (String privKey : getPrivateKeys()) {
             String hash = TSSHelpers.hashMessage(token);
             byte[] b64encodedData = android.util.Base64.decode(hash, android.util.Base64.NO_WRAP);
             Secp256k1.ECDSASignature ecdsaSignature = Secp256k1.Sign(b64encodedData, hexStringToByteArray(privKey));
-            String sig = ecdsaSignature.r.toString(16) +  ecdsaSignature.s.toString(16) + String.format("%02X", ecdsaSignature.v);
+            String sig = ecdsaSignature.r.toString(16) + ecdsaSignature.s.toString(16) + String.format("%02X", ecdsaSignature.v);
             LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
             msg.put("data", token);
             msg.put("sig", sig);
@@ -101,10 +103,10 @@ public class TssClientTests {
 
     public static byte[] hexStringToByteArray(String s) {
         int len = s.length();
-        byte[] data = new byte[len/2];
+        byte[] data = new byte[len / 2];
 
-        for(int i = 0; i < len; i+=2){
-            data[i/2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i+1), 16));
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16));
         }
 
         return data;
@@ -115,8 +117,7 @@ public class TssClientTests {
         BigInteger upper = BigInteger.ONE;
         BigInteger lower = BigInteger.ONE;
 
-        for (int i=0; i < parties.length; i++)
-        {
+        for (int i = 0; i < parties.length; i++) {
             BigInteger otherParty = parties[i];
             BigInteger otherPartyIndex = otherParty.add(BigInteger.ONE);
             if (!(party.equals(otherParty))) {
@@ -265,7 +266,7 @@ public class TssClientTests {
         String testingRouteIdentifier = "testingShares";
         String vid = "test_verifier_name" + Delimiters.Delimiter1 + "test_verifier_id";
         String session = testingRouteIdentifier +
-                vid + Delimiters.Delimiter2 + "default" + Delimiters.Delimiter3 + "0"+  Delimiters.Delimiter4 + randomNonce +
+                vid + Delimiters.Delimiter2 + "default" + Delimiters.Delimiter3 + "0" + Delimiters.Delimiter4 + randomNonce +
                 testingRouteIdentifier;
         System.out.println("session:" + session);
         List<String> sigs = getSignatures();
@@ -290,34 +291,28 @@ public class TssClientTests {
         }
 
         TSSClient client;
-       // try {
-            client = new TSSClient(session, clientIndex, partyIndexes.stream().mapToInt(Integer::intValue).toArray(),
-                    endpoints.toArray(new String[0]), socketEndpoints.toArray(new String[0]),
-                    TSSHelpers.base64Share(share), TSSHelpers.base64PublicKey(publicKey.toByteArray()));
-            while (!client.checkConnected()) {
-                // no-op
-            }
-            System.out.println("Reached here");
-            Precompute precompute = client.precompute(coeffs, sigs);
-            while (!client.isReady()) {
-                // no-op
-            }
+        client = new TSSClient(session, clientIndex, partyIndexes.stream().mapToInt(Integer::intValue).toArray(),
+                endpoints.toArray(new String[0]), socketEndpoints.toArray(new String[0]),
+                TSSHelpers.base64Share(share), TSSHelpers.base64PublicKey(publicKey.toByteArray()));
+        while (!client.checkConnected()) {
+            // no-op
+        }
+        System.out.println("Reached here");
+        Precompute precompute = client.precompute(coeffs, sigs);
+        while (!client.isReady()) {
+            // no-op
+        }
 
-            Triple<BigInteger, BigInteger, Byte> signatureResult = client.sign(msgHash, true, msg, precompute, sigs);
-            client.cleanup(sigs.toArray(new String[0]));
-            assert TSSHelpers.verifySignature(msgHash, signatureResult.getFirst(),
-                    signatureResult.getSecond(), signatureResult.getThird(), publicKey.toByteArray());
-            String pubKey = TSSHelpers.recoverPublicKey(msgHash, signatureResult.getFirst(),
-                    signatureResult.getSecond(), signatureResult.getThird());
-            String pkHex65 = pubKey;
-            BigInteger skToPkHex = new BigInteger(Secp256k1.PublicFromPrivateKey(privateKey.toByteArray()));
-            assertEquals(pkHex65, skToPkHex.toString(16));
-            System.out.println(pkHex65.equals(skToPkHex.toString(16)));
+        Triple<BigInteger, BigInteger, Byte> signatureResult = client.sign(msgHash, true, msg, precompute, sigs);
+        client.cleanup(sigs.toArray(new String[0]));
+        assert TSSHelpers.verifySignature(msgHash, signatureResult.getFirst(),
+                signatureResult.getSecond(), signatureResult.getThird(), publicKey.toByteArray());
+        byte[] pubKey = TSSHelpers.recoverPublicKey(msgHash, signatureResult.getFirst(),
+                signatureResult.getSecond(), signatureResult.getThird());
+        byte[] skToPk = Secp256k1.PublicFromPrivateKey(privateKey.toByteArray());
+        assert(java.util.Arrays.equals(pubKey, skToPk));
 
-            System.out.println("Signature (hex): " + TSSHelpers.hexSignature(signatureResult.getFirst(),
-                    signatureResult.getSecond(), signatureResult.getThird()));
-       // } catch (Exception e) {
-        //    e.printStackTrace();
-       // }
+        System.out.println("Signature (hex): " + TSSHelpers.hexSignature(signatureResult.getFirst(),
+                signatureResult.getSecond(), signatureResult.getThird()));
     }
 }

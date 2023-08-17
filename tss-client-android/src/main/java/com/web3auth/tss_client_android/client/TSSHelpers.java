@@ -106,29 +106,8 @@ public class TSSHelpers {
     }
 
     public static String hexSignature(BigInteger s, BigInteger r, byte v) throws TSSClientError {
-        byte[] rBytes = r.toByteArray();
-        byte[] sBytes = s.toByteArray();
-
-        if (rBytes.length > 32 || sBytes.length > 32) {
-            throw new TSSClientError("Problem with signature components");
-        }
-
-        byte[] paddedR = new byte[32];
-        byte[] paddedS = new byte[32];
-
-        // Pad with leading zeros if necessary
-        int rOffset = 32 - rBytes.length;
-        int sOffset = 32 - sBytes.length;
-
-        System.arraycopy(rBytes, 0, paddedR, rOffset, rBytes.length);
-        System.arraycopy(sBytes, 0, paddedS, sOffset, sBytes.length);
-
-        byte[] signatureBytes = new byte[65];
-        signatureBytes[0] = v;
-        System.arraycopy(paddedR, 0, signatureBytes, 1, 32);
-        System.arraycopy(paddedS, 0, signatureBytes, 33, 32);
-
-        return bytesToHex(signatureBytes);
+        Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
+        return signature.toHex();
     }
 
     public static byte[] getFinalTssPublicKey(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws Exception {
@@ -292,33 +271,13 @@ public class TSSHelpers {
     }
 
     public static boolean verifySignature(String msgHash, BigInteger s, BigInteger r, byte v, byte[] pubKey) {
-        try {
-            String pk = TSSHelpers.recoverPublicKey(msgHash, s, r, v);
-            assert pk != null;
-            return pk.getBytes(StandardCharsets.UTF_8) == pubKey;
-        } catch (Exception e) {
-            return false;
-        }
+        byte[] pk = TSSHelpers.recoverPublicKey(msgHash, s, r, v);
+        return java.util.Arrays.equals(pk, pubKey);
     }
-    public static String recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) {
-        Sign.SignatureData signatureData  = new Sign.SignatureData(v, r.toByteArray(), s.toByteArray());
-        int header = 0;
-        for (byte b : signatureData.getV()) {
-            header = (header << 8) + (b & 0xFF);
-        }
-        if (header < 27 || header > 34) {
-            return null;
-        }
-        int recId = header - 27;
-        BigInteger key = Sign.recoverFromSignature(
-                recId,
-                new ECDSASignature(
-                        new BigInteger(1, signatureData.getR()), new BigInteger(1, signatureData.getS())),
-                Numeric.hexStringToByteArray(msgHash));
-        if (key == null) {
-            return null;
-        }
-        return ("0x" + Keys.getAddress(key)).trim();
+    public static byte[] recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) {
+       Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
+       byte[] msgData = android.util.Base64.decode(msgHash, android.util.Base64.NO_WRAP);
+       return Secp256k1.RecoverPubBytesFromSignature(msgData,signature.toByteArray());
     }
 
     public static String assembleFullSession(String verifier, String verifierId, String tssTag, String tssNonce, String sessionNonce) {
