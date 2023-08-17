@@ -28,13 +28,11 @@ public class TSSHelpers {
 
     public static final BigInteger secp256k1N = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16);
 
-    private TSSHelpers() {
-        // Optional: Add any initialization code here
-    }
+    private TSSHelpers() {}
 
-    public static byte[] hashMessage(byte[] message) {
-        byte[] hashedData = Hash.sha3(message);
-        return hashedData;
+    public static String hashMessage(String message) {
+        byte[] hashedData = Hash.sha3(message.getBytes(StandardCharsets.UTF_8));
+        return android.util.Base64.encodeToString(hashedData,android.util.Base64.NO_WRAP);
     }
 
     public static String bytesToHex(byte[] bytes) {

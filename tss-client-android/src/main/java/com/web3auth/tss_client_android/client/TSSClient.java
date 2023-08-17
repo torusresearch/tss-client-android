@@ -209,21 +209,15 @@ public class TSSClient {
                 throw new TSSClientError("Insufficient Precomputes");
             }
 
-            String signingMessage = "";
-
-            // TODO: Bug here
-            if (hashOnly) {
+            if (!hashOnly) {
                 if (originalMessage != null) {
-                    String hashedMessage = String.format("%02x", TSSHelpers.hashMessage(originalMessage.getBytes(StandardCharsets.UTF_8)));
+                    String hashedMessage = TSSHelpers.hashMessage(originalMessage);
                     if (!hashedMessage.equals(message)) {
                         throw new TSSClientError("hash of original message does not match message");
                     }
-                    signingMessage = new String(Hex.decode(message.getBytes())); // Assuming Hex class converts from hex to bytes
                 } else {
                     throw new TSSClientError("Original message has to be provided");
                 }
-            } else {
-                signingMessage = message;
             }
 
             List<String> fragments = new ArrayList<>();
@@ -241,7 +235,7 @@ public class TSSClient {
                     msg.put("session", session);
                     msg.put("sender", index);
                     msg.put("recipient", i);
-                    msg.put("msg", signingMessage);
+                    msg.put("msg", message);
                     msg.put("hash_only", hashOnly);
                     msg.put("original_message", originalMessage != null ? originalMessage : "");
                     msg.put("hash_algo", "keccak256");
@@ -271,13 +265,13 @@ public class TSSClient {
                 }
             }
 
-            String signatureFragment = signWithPrecompute(signingMessage, hashOnly, precompute);
+            String signatureFragment = signWithPrecompute(message, hashOnly, precompute);
             fragments.add(signatureFragment);
 
             String input = String.join(",", fragments);
             SignatureFragments sigFrags = new SignatureFragments(input);
 
-            String signature = verifyWithPrecompute(signingMessage, hashOnly, precompute, sigFrags, pubKey);
+            String signature = verifyWithPrecompute(message, hashOnly, precompute, sigFrags, pubKey);
 
             String precompute_r = precompute.getR();
             byte[] decoded_r = android.util.Base64.decode(precompute_r, Base64.NO_WRAP);

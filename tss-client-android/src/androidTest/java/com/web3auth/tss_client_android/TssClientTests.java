@@ -85,8 +85,9 @@ public class TssClientTests {
 
         List<String> sigs = new ArrayList<>();
         for (String privKey : getPrivateKeys()) {
-            byte[] hash = TSSHelpers.hashMessage(token.getBytes(StandardCharsets.UTF_8));
-            Secp256k1.ECDSASignature ecdsaSignature = Secp256k1.Sign(hash, hexStringToByteArray(privKey));
+            String hash = TSSHelpers.hashMessage(token);
+            byte[] b64encodedDate = android.util.Base64.decode(hash, android.util.Base64.NO_WRAP);
+            Secp256k1.ECDSASignature ecdsaSignature = Secp256k1.Sign(b64encodedDate, hexStringToByteArray(privKey));
             String sig = ecdsaSignature.r.toString(16) +  ecdsaSignature.s.toString(16) + String.format("%02X", ecdsaSignature.v);
             LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
             msg.put("data", token);
@@ -251,12 +252,12 @@ public class TssClientTests {
     public void testExample() throws Exception, DKLSError {
         int parties = 4;
         String msg = "hello world";
-        byte[] msgHash = TSSHelpers.hashMessage(msg.getBytes(StandardCharsets.UTF_8));
+        String msgHash = TSSHelpers.hashMessage(msg);
         int clientIndex = parties - 1;
 
         BigInteger randomKey = new BigInteger(1, Secp256k1.GenerateECKey());
         BigInteger random = randomKey.add(BigInteger.valueOf(System.currentTimeMillis() / 1000));
-        String randomNonce = TSSHelpers.bytesToHex(TSSHelpers.hashMessage(random.toByteArray()));
+        String randomNonce = TSSHelpers.hashMessage(random.toString(16));
         String testingRouteIdentifier = "testingShares";
         String vid = "test_verifier_name" + Delimiters.Delimiter1 + "test_verifier_id";
         String session = testingRouteIdentifier +
@@ -298,11 +299,11 @@ public class TssClientTests {
                 // no-op
             }
 
-            Triple<BigInteger, BigInteger, Byte> signatureResult = client.sign(TSSHelpers.bytesToHex(msgHash), true, msg, precompute, sigs);
+            Triple<BigInteger, BigInteger, Byte> signatureResult = client.sign(msgHash, true, msg, precompute, sigs);
             client.cleanup(sigs.toArray(new String[0]));
-            assert TSSHelpers.verifySignature(TSSHelpers.bytesToHex(msgHash), signatureResult.getFirst(),
+            assert TSSHelpers.verifySignature(msgHash, signatureResult.getFirst(),
                     signatureResult.getSecond(), signatureResult.getThird(), publicKey.toByteArray());
-            String pubKey = TSSHelpers.recoverPublicKey(TSSHelpers.bytesToHex(msgHash), signatureResult.getFirst(),
+            String pubKey = TSSHelpers.recoverPublicKey(msgHash, signatureResult.getFirst(),
                     signatureResult.getSecond(), signatureResult.getThird());
             String pkHex65 = pubKey;
             BigInteger skToPkHex = new BigInteger(Secp256k1.PublicFromPrivateKey(privateKey.toByteArray()));

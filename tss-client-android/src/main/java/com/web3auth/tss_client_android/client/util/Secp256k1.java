@@ -197,7 +197,7 @@ public class Secp256k1 {
 
 
     public static ECDSASignature Sign(byte[] data, byte[] privateKey) {
-        if (data.length != 32) {
+        if (data.length != 32 || privateKey.length != 32) {
             throw new IllegalArgumentException("Expected 32 byte input to ECDSA signature, not " + data.length);
         }
         ECDSASigner signer = new ECDSASigner(new HMacDSAKCalculator(new SHA256Digest()));
