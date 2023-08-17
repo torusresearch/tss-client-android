@@ -115,10 +115,11 @@ public class TssClientTests {
         BigInteger upper = BigInteger.ONE;
         BigInteger lower = BigInteger.ONE;
 
-        for (BigInteger otherParty : parties) {
+        for (int i=0; i < parties.length; i++)
+        {
+            BigInteger otherParty = parties[i];
             BigInteger otherPartyIndex = otherParty.add(BigInteger.ONE);
-
-            if (!party.equals(otherParty)) {
+            if (!(party.equals(otherParty))) {
                 BigInteger otherPartyIndexNeg = otherPartyIndex.negate();
                 upper = upper.multiply(otherPartyIndexNeg).mod(Secp256k1.CURVE.getN());
                 BigInteger temp = partyIndex.subtract(otherPartyIndex).mod(Secp256k1.CURVE.getN());
@@ -128,11 +129,12 @@ public class TssClientTests {
 
         BigInteger lowerInverse = lower.modInverse(Secp256k1.CURVE.getN());
         BigInteger delta = upper.multiply(lowerInverse).mod(Secp256k1.CURVE.getN());
+
         return delta;
     }
 
     public static void distributeShares(BigInteger privKey, List<Integer> parties, List<String> endpoints,
-                                        int localClientIndex, String _session) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, InterruptedException {
+                                        int localClientIndex, String current_session) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, InterruptedException {
         List<BigInteger> additiveShares = new ArrayList<>();
         BigInteger shareSum = BigInteger.ZERO;
 
@@ -143,22 +145,21 @@ public class TssClientTests {
             shareSum = shareSum.add(shareBigInt);
         }
 
-        BigInteger finalShare = privKey.subtract(shareSum.mod(Secp256k1.CURVE.getN()))
-                .mod(Secp256k1.CURVE.getN());
+        BigInteger finalShare = privKey.subtract(shareSum.mod(Secp256k1.CURVE.getN())).mod(Secp256k1.CURVE.getN());
         additiveShares.add(finalShare);
 
-        BigInteger reduced = additiveShares.stream().reduce(BigInteger.ZERO, BigInteger::add)
-                .mod(Secp256k1.CURVE.getN());
+        BigInteger reduced = additiveShares.stream().reduce(BigInteger.ZERO, (a, b) -> a.add(b).mod(Secp256k1.CURVE.getN()));
+
         Assert.assertEquals(reduced.toString(16), privKey.toString(16));
+
 
         List<BigInteger> shares = new ArrayList<>();
         for (int i = 0; i < additiveShares.size(); i++) {
-            BigInteger additiveShare = additiveShares.get(i);
             BigInteger[] partiesBigInt = new BigInteger[parties.size()];
             for (int j = 0; j < parties.size(); j++) {
                 partiesBigInt[j] = BigInteger.valueOf(parties.get(j));
             }
-
+            BigInteger additiveShare = additiveShares.get(i);
             BigInteger coeffInverse = lagrange(partiesBigInt, BigInteger.valueOf(i)).modInverse(Secp256k1.CURVE.getN());
             BigInteger denormalizedShare = additiveShare.multiply(coeffInverse).mod(Secp256k1.CURVE.getN());
             shares.add(denormalizedShare);
@@ -167,10 +168,10 @@ public class TssClientTests {
         CountDownLatch latch = new CountDownLatch(parties.size() - 1);
 
         for (int i = 0; i < parties.size(); i++) {
-            BigInteger _share = shares.get(i);
+            BigInteger current_share = shares.get(i);
 
             if (i == localClientIndex) {
-                share = _share;
+                share = current_share;
             } else {
                 String endpoint = endpoints.get(i);
                 if (endpoint != null) {
@@ -181,11 +182,14 @@ public class TssClientTests {
                             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                             conn.setRequestMethod("POST");
                             conn.setRequestProperty("Content-Type", "application/json");
-                            conn.setRequestProperty("x-web3-session-id", TSSClient.sid(_session));
+                            conn.setRequestProperty("Access-Control-Allow-Origin", "*");
+                            conn.setRequestProperty("Access-Control-Allow-Methods", "GET, POST");
+                            conn.setRequestProperty("Access-Control-Allow-Headers", "Content-Type");
+                            conn.setRequestProperty("x-web3-session-id", TSSClient.sid(current_session));
 
-                            String b64Share = android.util.Base64.encodeToString(share.toByteArray(), android.util.Base64.NO_WRAP);
+                            String b64Share = android.util.Base64.encodeToString(current_share.toByteArray(), android.util.Base64.NO_WRAP);
                             LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
-                            msg.put("session", _session);
+                            msg.put("session", current_session);
                             msg.put("share", b64Share);
 
                             Gson gson = new Gson();
