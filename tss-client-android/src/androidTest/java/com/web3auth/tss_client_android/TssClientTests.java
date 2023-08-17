@@ -86,8 +86,8 @@ public class TssClientTests {
         List<String> sigs = new ArrayList<>();
         for (String privKey : getPrivateKeys()) {
             String hash = TSSHelpers.hashMessage(token);
-            byte[] b64encodedDate = android.util.Base64.decode(hash, android.util.Base64.NO_WRAP);
-            Secp256k1.ECDSASignature ecdsaSignature = Secp256k1.Sign(b64encodedDate, hexStringToByteArray(privKey));
+            byte[] b64encodedData = android.util.Base64.decode(hash, android.util.Base64.NO_WRAP);
+            Secp256k1.ECDSASignature ecdsaSignature = Secp256k1.Sign(b64encodedData, hexStringToByteArray(privKey));
             String sig = ecdsaSignature.r.toString(16) +  ecdsaSignature.s.toString(16) + String.format("%02X", ecdsaSignature.v);
             LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
             msg.put("data", token);
