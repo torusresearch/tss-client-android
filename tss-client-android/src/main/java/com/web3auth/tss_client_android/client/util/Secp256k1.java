@@ -130,7 +130,7 @@ public class Secp256k1 {
             return null;
         }
 
-        ECPrivateKeyParameters privateKeyParams = new ECPrivateKeyParameters(new BigInteger(privateKey), CURVE);
+        ECPrivateKeyParameters privateKeyParams = new ECPrivateKeyParameters(new BigInteger(1, privateKey), CURVE);
         ECPublicKeyParameters publicKeyParams = new ECPublicKeyParameters(pubKey, CURVE);
 
         FixedPointCombMultiplier multiplier = new FixedPointCombMultiplier();

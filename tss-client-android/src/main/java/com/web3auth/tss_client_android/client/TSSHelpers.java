@@ -14,12 +14,10 @@ import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 import org.web3j.utils.Numeric;
 
-import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -132,8 +130,8 @@ public class TSSHelpers {
     }
 
     public static byte[] getFinalTssPublicKey(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws Exception {
-        BigInteger serverLagrangeCoefficient = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, BigInteger.ONE);
-        BigInteger userLagrangeCoefficient = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, userTssIndex);
+        BigInteger serverLagrangeCoefficient = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{new BigInteger("1"), userTssIndex}, new BigInteger("1"));
+        BigInteger userLagrangeCoefficient = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{new BigInteger("1"), userTssIndex}, userTssIndex);
 
         ECCurve curve = ECNamedCurveTable.getByName("secp256k1").getCurve();
 
@@ -158,42 +156,6 @@ public class TSSHelpers {
         ECPoint combined = Secp256k1.combinePublicKeys(keys);
 
         return combined.getEncoded(false);
-    }
-
-    public static byte[] getFinalTssPublicKey1(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws TSSClientError, IOException {
-        BigInteger serverLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, BigInteger.ONE);
-        BigInteger userLagrangeCoeff = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTssIndex}, userTssIndex);
-
-        ECPoint serverTermUnprocessed = Secp256k1.parsePublicKey(dkgPubKey);
-        ECPoint userTermUnprocessed = Secp256k1.parsePublicKey(userSharePubKey);
-
-        if (serverTermUnprocessed == null || userTermUnprocessed == null) {
-            throw new TSSClientError("InvalidPublicKey");
-        }
-
-        ECPoint serverTerm = serverTermUnprocessed;
-        ECPoint userTerm = userTermUnprocessed;
-
-        byte[] serverLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(serverLagrangeCoeff.toByteArray());
-        byte[] userLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(userLagrangeCoeff.toByteArray());
-
-        ECPoint serverTermProcessed = Secp256k1.ecdh(serverTerm, serverLagrangeCoeffData);
-        ECPoint userTermProcessed = Secp256k1.ecdh(userTerm, userLagrangeCoeffData);
-
-        if (serverTermProcessed == null || userTermProcessed == null) {
-            throw new TSSClientError("Failed to process server term");
-        }
-
-        serverTerm = serverTermProcessed;
-        userTerm = userTermProcessed;
-
-        ECPoint combination = Secp256k1.combinePublicKeys(new ECPoint[] { serverTerm, userTerm });
-
-        if (combination == null) {
-            throw new TSSClientError("Failed to combine keys");
-        }
-
-        return combination.getEncoded(false);
     }
 
     private static byte[] ensureDataLengthIs32Bytes(byte[] data) {
