@@ -1,5 +1,7 @@
 package com.web3auth.tss_client_android.client;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -58,10 +60,11 @@ public final class EventQueue {
     // Method to count events for each event type in a specific session
     public Map<EventType, Integer> countEvents(String session) throws ExecutionException, InterruptedException {
         return queueExecutor.submit(() -> {
-            Map<EventType, Integer> counts = new HashMap<>();
+            HashMap<EventType, Integer> counts = new HashMap<>();
             for (Event event : events) {
+                Integer count = counts.getOrDefault(event.getType(), 0);
                 if (event.getOccurred().after(lastFocus) && event.getSession().equals(session)) {
-                    counts.put(event.getType(), counts.getOrDefault(event.getType(), 0) + 1);
+                    counts.put(event.getType(), count == null ? 1 : count + 1);
                 }
             }
             return counts;
