@@ -1,7 +1,4 @@
 package com.web3auth.tss_client_android.client;
-
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -84,11 +81,6 @@ public final class EventQueue {
         queueExecutor.submit(() -> {
             events.removeIf(event -> event.getSession().equals(session));
         });
-    }
-
-    // Method to shut down the executor when no longer needed
-    public void shutdown() {
-        queueExecutor.shutdown();
     }
 }
 

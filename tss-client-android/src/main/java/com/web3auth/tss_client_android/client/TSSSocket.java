@@ -1,14 +1,8 @@
 package com.web3auth.tss_client_android.client;
-
 import com.web3auth.tss_client_android.BuildConfig;
-
 import org.json.JSONObject;
-
 import java.net.URI;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -17,15 +11,11 @@ import io.socket.engineio.client.transports.WebSocket;
 public class TSSSocket {
     private final String session;
     private final int party;
-    private final String socketURL;
     private Socket socket;
-    private final Map<String, String> headers;
 
     public TSSSocket(String session, int party, String socketURL) {
         this.session = session;
         this.party = party;
-        this.socketURL = socketURL;
-        this.headers = new HashMap<>();
 
         try {
             IO.Options options;
@@ -76,13 +66,23 @@ public class TSSSocket {
         socket.on(Socket.EVENT_DISCONNECT, args -> System.out.println("disconnected, party: " + party));
 
         socket.on("precompute_complete", args -> {
+            JSONObject jsonData = (JSONObject) args[0];
+            String session = jsonData.optString("session");
+            int party = jsonData.optInt("party", -1);
+            if (session.isEmpty() || party == -1 ) {
+                EventQueue.shared().addEvent(new Event(
+                        "Server failed to respond with valid json",
+                        this.session,
+                        party,
+                        new Date(),
+                        EventType.SOCKET_DATA_ERROR
+                ));
+                return;
+            }
             if (!session.equals(this.session)) {
                 System.out.println("ignoring message for a different session...");
                 return;
             }
-            JSONObject jsonData = (JSONObject) args[0];
-            String session = jsonData.optString("session");
-            int party = jsonData.optInt("party");
             EventQueue.shared().addEvent(new Event(
                     String.valueOf(party),
                     session,
@@ -94,13 +94,23 @@ public class TSSSocket {
         });
 
         socket.on("precompute_failed", args -> {
+            JSONObject jsonData = (JSONObject) args[0];
+            String session = jsonData.optString("session");
+            int party = jsonData.optInt("party", -1);
+            if (session.isEmpty() || party == -1) {
+                EventQueue.shared().addEvent(new Event(
+                        "Server failed to respond with valid json",
+                        this.session,
+                        party,
+                        new Date(),
+                        EventType.SOCKET_DATA_ERROR
+                ));
+                return;
+            }
             if (!session.equals(this.session)) {
                 System.out.println("ignoring message for a different session...");
                 return;
             }
-            JSONObject jsonData = (JSONObject) args[0];
-            String session = jsonData.optString("session");
-            int party = jsonData.optInt("party");
             EventQueue.shared().addEvent(new Event(
                     String.valueOf(party),
                     session,
@@ -111,16 +121,27 @@ public class TSSSocket {
         });
 
         socket.on("send", args -> {
+            JSONObject data = (JSONObject) args[0];
+            String session = data.optString("session");
+            int sender = data.optInt("sender", -1);
+            int recipient = data.optInt("recipient", -1);
+            String msg_type = data.optString("msg_type");
+            String msg_data = data.optString("msg_data");
+            if (session.isEmpty() || sender == -1 || recipient == -1 || msg_type.isEmpty()) {
+                EventQueue.shared().addEvent(new Event(
+                        "Server failed to respond with valid json",
+                        this.session,
+                        recipient,
+                        new Date(),
+                        EventType.SOCKET_DATA_ERROR
+                ));
+                return;
+            }
+
             if (!session.equals(this.session)) {
                 System.out.println("ignoring message for a different session...");
                 return;
             }
-            JSONObject data = (JSONObject) args[0];
-            String session = data.optString("session");
-            int sender = data.optInt("sender");
-            int recipient = data.optInt("recipient");
-            String msg_type = data.optString("msg_type");
-            String msg_data = data.optString("msg_data");
             MessageQueue.shared().addMessage(new Message(
                     session,
                     sender,

@@ -60,6 +60,11 @@ public final class TSSConnectionInfo {
     public void removeInfo(String session, int party) {
         synchronized (TSSConnectionInfo.class) {
             endpoints.removeIf(ep -> ep.getSession().equals(session) && ep.getParty() == party);
+            for (TSSSocket socketManager : socketManagers) {
+                if (socketManager.getSession().equals(session) && socketManager.getParty() == party) {
+                    socketManager.disconnect();
+                }
+            }
             socketManagers.removeIf(socket -> socket.getSession().equals(session) && socket.getParty() == party);
         }
     }
@@ -67,6 +72,11 @@ public final class TSSConnectionInfo {
     public void removeAll(String session) {
         synchronized (TSSConnectionInfo.class) {
             endpoints.removeIf(endpoint -> endpoint.getSession().equals(session));
+            for (TSSSocket socketManager : socketManagers) {
+                if (socketManager.getSession().equals(session)) {
+                    socketManager.disconnect();
+                }
+            }
             socketManagers.removeIf(socket -> socket.getSession().equals(session));
         }
     }

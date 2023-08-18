@@ -59,10 +59,6 @@ public final class MessageQueue {
     public void removeMessages(String session) {
         queueExecutor.submit(() -> messages.removeIf(msg -> msg.getSession().equals(session)));
     }
-
-    public void shutdown() {
-        queueExecutor.shutdown();
-    }
 }
 
 

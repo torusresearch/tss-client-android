@@ -5,11 +5,11 @@ import org.json.JSONObject;
 
 public class TssSendMsg {
 
-    private final String session;
-    private final int index;
-    private final int recipient;
-    private final String msg_type;
-    private final String msg_data;
+    public final String session;
+    public final int index;
+    public final int recipient;
+    public final String msg_type;
+    public final String msg_data;
 
     public TssSendMsg(String session, int index, int recipient, String msg_type, String msg_data) {
         this.session = session;
@@ -17,26 +17,6 @@ public class TssSendMsg {
         this.recipient = recipient;
         this.msg_type = msg_type;
         this.msg_data = msg_data;
-    }
-
-    public String getSession() {
-        return session;
-    }
-
-    public int getIndex() {
-        return index;
-    }
-
-    public int getRecipient() {
-        return recipient;
-    }
-
-    public String getMsgType() {
-        return msg_type;
-    }
-
-    public String getMsgData() {
-        return msg_data;
     }
 
     public JSONObject toJsonObject() throws JSONException {
