@@ -1,10 +1,11 @@
 package com.web3auth.tss_client_android.dkls;
+
 import android.util.Base64;
 
 import com.web3auth.tss_client_android.client.util.Secp256k1;
 
 import org.bouncycastle.util.Arrays;
-import java.math.BigInteger;
+
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -18,7 +19,7 @@ public final class ChaChaRng {
         DKLSError dklsError = new DKLSError();
         byte[] privateKeyBytes = Secp256k1.GenerateECKey();
         byte[] stateBytes = (privateKeyBytes.length > 32) ? Arrays.copyOfRange(privateKeyBytes, privateKeyBytes.length - 32, privateKeyBytes.length) :
-            privateKeyBytes;
+                privateKeyBytes;
         // convert bytes to base64
         String state = android.util.Base64.encodeToString(stateBytes, Base64.NO_WRAP);
         long ptr = jniChaChaRng(state, dklsError);

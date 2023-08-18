@@ -22,11 +22,12 @@ public class TSSHelpers {
 
     public static final BigInteger secp256k1N = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16);
 
-    private TSSHelpers() {}
+    private TSSHelpers() {
+    }
 
     public static String hashMessage(String message) {
         byte[] hashedData = Hash.sha3(message.getBytes(StandardCharsets.UTF_8));
-        return android.util.Base64.encodeToString(hashedData,android.util.Base64.NO_WRAP);
+        return android.util.Base64.encodeToString(hashedData, android.util.Base64.NO_WRAP);
     }
 
     public static String bytesToHex(byte[] bytes) {
@@ -54,9 +55,9 @@ public class TSSHelpers {
 
     public static String base64PublicKey(byte[] pubKey) throws TSSClientError {
         if (pubKey.length == 65) {
-                byte[] trimmedKey = new byte[pubKey.length - 1];
-                System.arraycopy(pubKey, 1, trimmedKey, 0, trimmedKey.length);
-                return android.util.Base64.encodeToString(trimmedKey, Base64.NO_WRAP);
+            byte[] trimmedKey = new byte[pubKey.length - 1];
+            System.arraycopy(pubKey, 1, trimmedKey, 0, trimmedKey.length);
+            return android.util.Base64.encodeToString(trimmedKey, Base64.NO_WRAP);
         }
 
         if (pubKey.length == 64) {
@@ -232,10 +233,11 @@ public class TSSHelpers {
         byte[] pk = TSSHelpers.recoverPublicKey(msgHash, s, r, v);
         return java.util.Arrays.equals(pk, pubKey);
     }
+
     public static byte[] recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) {
-       Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
-       byte[] msgData = android.util.Base64.decode(msgHash, android.util.Base64.NO_WRAP);
-       return Secp256k1.RecoverPubBytesFromSignature(msgData,signature.toByteArray());
+        Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
+        byte[] msgData = android.util.Base64.decode(msgHash, android.util.Base64.NO_WRAP);
+        return Secp256k1.RecoverPubBytesFromSignature(msgData, signature.toByteArray());
     }
 
     public static String assembleFullSession(String verifier, String verifierId, String tssTag, String tssNonce, String sessionNonce) {

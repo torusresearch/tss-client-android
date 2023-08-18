@@ -6,7 +6,8 @@ public class DKLSError extends Throwable {
     public int code = -1;
     private String message = "";
 
-    public DKLSError() {}
+    public DKLSError() {
+    }
 
     public DKLSError(String message) {
         this.message = message;

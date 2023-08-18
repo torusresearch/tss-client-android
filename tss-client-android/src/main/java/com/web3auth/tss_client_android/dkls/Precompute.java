@@ -13,6 +13,7 @@ public final class Precompute {
             throw dklsError;
         }
     }
+
     private native long jniPrecomputeFromString(String parties, DKLSError error);
 
     private native String jniPrecomputeToString(DKLSError error);

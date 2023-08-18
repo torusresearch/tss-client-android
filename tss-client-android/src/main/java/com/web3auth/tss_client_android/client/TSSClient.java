@@ -18,8 +18,6 @@ import com.web3auth.tss_client_android.dkls.SignatureFragments;
 import com.web3auth.tss_client_android.dkls.ThresholdSigner;
 import com.web3auth.tss_client_android.dkls.Utilities;
 
-import org.bouncycastle.util.encoders.Hex;
-
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
@@ -132,7 +130,7 @@ public class TSSClient {
                     List<String> endpointStrings = new ArrayList<>();
                     List<TSSEndpoint> endpoints = TSSConnectionInfo.getShared().allEndpoints(session);
                     for (TSSEndpoint endpoint : endpoints) {
-                        endpointStrings.add(local_servers ? endpoint.getUrl().replace("10.0.2.2","localhost") : endpoint.getUrl());
+                        endpointStrings.add(local_servers ? endpoint.getUrl().replace("10.0.2.2", "localhost") : endpoint.getUrl());
                     }
                     endpointStrings.add((int) index, "websocket:" + socketID);
 
@@ -300,7 +298,7 @@ public class TSSClient {
         return Utilities.localSign(message, hashOnly, precompute);
     }
 
-    private String verifyWithPrecompute(String message,  boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws Exception, DKLSError {
+    private String verifyWithPrecompute(String message, boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws Exception, DKLSError {
         return Utilities.localVerify(message, hashOnly, precompute, fragments, pubKey);
     }
 

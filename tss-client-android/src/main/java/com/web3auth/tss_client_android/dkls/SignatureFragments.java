@@ -7,7 +7,7 @@ public final class SignatureFragments {
 
     private native long jniSignatureFragmentsFromString(String input, DKLSError dklsError);
 
-    private native String jniSignatureFragmentsToString( DKLSError dklsError);
+    private native String jniSignatureFragmentsToString(DKLSError dklsError);
 
     private native void jniSignatureFragmentsFree();
 

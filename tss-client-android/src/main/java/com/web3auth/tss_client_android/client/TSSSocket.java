@@ -29,7 +29,7 @@ public class TSSSocket {
 
         try {
             IO.Options options;
-            if(BuildConfig.DEBUG) {
+            if (BuildConfig.DEBUG) {
                 options = IO.Options.builder()
                         .setQuery(session.split(Delimiters.Delimiter4)[1])
                         .setTransports(new String[]{WebSocket.NAME})

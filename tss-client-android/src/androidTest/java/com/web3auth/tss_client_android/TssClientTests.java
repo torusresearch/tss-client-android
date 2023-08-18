@@ -1,7 +1,5 @@
 package com.web3auth.tss_client_android;
 
-import static org.junit.Assert.assertEquals;
-
 import androidx.core.util.Pair;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
@@ -29,7 +27,6 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -310,7 +307,7 @@ public class TssClientTests {
         byte[] pubKey = TSSHelpers.recoverPublicKey(msgHash, signatureResult.getFirst(),
                 signatureResult.getSecond(), signatureResult.getThird());
         byte[] skToPk = Secp256k1.PublicFromPrivateKey(privateKey.toByteArray());
-        assert(java.util.Arrays.equals(pubKey, skToPk));
+        assert (java.util.Arrays.equals(pubKey, skToPk));
 
         System.out.println("Signature (hex): " + TSSHelpers.hexSignature(signatureResult.getFirst(),
                 signatureResult.getSecond(), signatureResult.getThird()));

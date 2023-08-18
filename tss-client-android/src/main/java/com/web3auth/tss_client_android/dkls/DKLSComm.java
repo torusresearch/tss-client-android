@@ -2,7 +2,6 @@ package com.web3auth.tss_client_android.dkls;
 
 import androidx.core.util.Pair;
 
-import com.web3auth.tss_client_android.client.TSSmessages.TssSendMsg;
 import com.web3auth.tss_client_android.client.EventQueue;
 import com.web3auth.tss_client_android.client.EventType;
 import com.web3auth.tss_client_android.client.Message;
@@ -10,6 +9,7 @@ import com.web3auth.tss_client_android.client.MessageQueue;
 import com.web3auth.tss_client_android.client.TSSConnectionInfo;
 import com.web3auth.tss_client_android.client.TSSEndpoint;
 import com.web3auth.tss_client_android.client.TSSSocket;
+import com.web3auth.tss_client_android.client.TSSmessages.TssSendMsg;
 
 import java.math.BigInteger;
 import java.util.Date;
@@ -49,7 +49,7 @@ public final class DKLSComm {
                         break;
                     }
                 }
-            } catch(Exception _e) {
+            } catch (Exception _e) {
                 // no-op, result goes back empty
             }
         }
@@ -57,7 +57,7 @@ public final class DKLSComm {
     }
 
     @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
-    private boolean sendMsg(String session, byte[] index_bytes, byte[] remote_bytes, String  msgType, String msgData) {
+    private boolean sendMsg(String session, byte[] index_bytes, byte[] remote_bytes, String msgType, String msgData) {
         try {
             BigInteger index = new BigInteger(1, index_bytes);
             BigInteger remote = new BigInteger(1, remote_bytes);
