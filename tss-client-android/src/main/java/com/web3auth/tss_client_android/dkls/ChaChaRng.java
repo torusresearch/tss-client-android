@@ -1,21 +1,14 @@
 package com.web3auth.tss_client_android.dkls;
-
 import android.util.Base64;
-
 import com.web3auth.tss_client_android.client.util.Secp256k1;
-
 import org.bouncycastle.util.Arrays;
-
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 public final class ChaChaRng {
     //Note: Linter cannot detect jni usage of this variable, hence the need to supress warnings
     @SuppressWarnings("all")
     private final long pointer;
 
-    public ChaChaRng() throws DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException {
+    public ChaChaRng() throws DKLSError {
         DKLSError dklsError = new DKLSError();
         byte[] privateKeyBytes = Secp256k1.GenerateECKey();
         byte[] stateBytes = (privateKeyBytes.length > 32) ? Arrays.copyOfRange(privateKeyBytes, privateKeyBytes.length - 32, privateKeyBytes.length) :

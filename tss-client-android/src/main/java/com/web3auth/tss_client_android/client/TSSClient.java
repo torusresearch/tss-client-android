@@ -1,14 +1,11 @@
 package com.web3auth.tss_client_android.client;
-
 import android.util.Base64;
-
 import androidx.core.util.Pair;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.web3auth.tss_client_android.client.util.Secp256k1;
+import com.web3auth.tss_client_android.client.util.Triple;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;
 import com.web3auth.tss_client_android.dkls.DKLSComm;
@@ -17,7 +14,6 @@ import com.web3auth.tss_client_android.dkls.Precompute;
 import com.web3auth.tss_client_android.dkls.SignatureFragments;
 import com.web3auth.tss_client_android.dkls.ThresholdSigner;
 import com.web3auth.tss_client_android.dkls.Utilities;
-
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
@@ -26,34 +22,27 @@ import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import kotlin.Triple;
+import io.socket.client.Socket;
 
 public class TSSClient {
     private final String session;
     private final int parties;
-    private final ThresholdSigner signer;
-    private final DKLSComm comm;
-    private final ChaChaRng rng;
-    private final long index;
-    private final boolean ready = false;
-    private final String pubKey;
     private boolean consumed = false;
-    private final boolean _sLessThanHalf = true;
+    private final ThresholdSigner signer;
+    private final ChaChaRng rng;
+    private final DKLSComm comm;
+    private final int index;
+    private final String pubKey;
 
-    public TSSClient(String session, long index, int[] parties, String[] endpoints,
-                     String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError, InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, ExecutionException, InterruptedException {
+    public TSSClient(String session, int index, int[] parties, String[] endpoints,
+                     String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError {
         if (parties.length != tssSocketEndpoints.length) {
             throw new TSSClientError("Parties and socket length must be equal");
         }
@@ -80,12 +69,12 @@ public class TSSClient {
         signer = new ThresholdSigner(session, (int) this.index, parties.length, parties.length, share, pubKey);
     }
 
-    public static String sid(String session) {
+    public static String sid(String session) throws TSSClientError {
         String[] sessionParts = session.split(Delimiters.Delimiter4);
         if (sessionParts.length >= 2) {
             return sessionParts[1];
         } else {
-            throw new RuntimeException("Invalid session format");
+            throw new TSSClientError("Invalid session format");
         }
     }
 
@@ -98,22 +87,17 @@ public class TSSClient {
         EventQueue.shared().updateFocus(new Date());
         for (int i = 0; i < parties; i++) {
             if (i != index) {
-                try {
-                    TSSSocket tssSocket = TSSConnectionInfo.getShared().lookupEndpoint(session, i).second;
-                    if (tssSocket.getSocket() == null && tssSocket.getSocket().id() == null) {
-                        throw new TSSClientError("socket not connected yet, party: " + i + ", session: " + session);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                Socket tssSocket = TSSConnectionInfo.getShared().lookupEndpoint(session, i).second.getSocket();
+                if (tssSocket == null || tssSocket.id() == null) {
+                    throw new TSSClientError("socket not connected yet, party: " + i + ", session: " + session);
                 }
             }
         }
 
         for (int i = 0; i < parties; i++) {
-            long party = i;
-            if (party != index) {
+            if (i != index) {
                 try {
-                    Pair<TSSEndpoint, TSSSocket> tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(session, (int) party);
+                    Pair<TSSEndpoint, TSSSocket> tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(session, i);
                     String socketID = tssConnection.second.getSocket().id();
                     String tssUrl = tssConnection.first.getUrl();
                     String urlStr = tssUrl + "/precompute";
@@ -135,14 +119,14 @@ public class TSSClient {
                     endpointStrings.add((int) index, "websocket:" + socketID);
 
                     LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
-                    msg.put("endpoints", endpointStrings);
-                    msg.put("session", session);
                     List<Integer> partiesList = new ArrayList<>();
                     for (int j = 0; j < parties; j++) {
                         partiesList.add(j);
                     }
+                    msg.put("endpoints", endpointStrings);
+                    msg.put("session", session);
                     msg.put("parties", partiesList);
-                    msg.put("player_index", party);
+                    msg.put("player_index", (long) i);
                     msg.put("threshold", parties);
                     msg.put("pubkey", pubKey);
                     msg.put("notifyWebsocketId", socketID);
@@ -150,22 +134,20 @@ public class TSSClient {
                     msg.put("server_coeffs", serverCoeffs);
                     msg.put("signatures", signatures);
 
-                    String jsonData = new ObjectMapper().writeValueAsString(msg);
                     Gson gson = new Gson();
-                    JsonObject data = gson.fromJson(jsonData, JsonObject.class);
+                    byte[] jsonData = gson.toJson(msg).getBytes(StandardCharsets.UTF_8);
                     connection.setDoOutput(true);
                     try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
-                        out.write(data.toString().getBytes(StandardCharsets.UTF_8));
+                        out.write(jsonData);
                         out.flush();
                     }
 
                     if (connection.getResponseCode() != 200) {
-                        System.out.println("Failed precompute route for " + urlStr);
+                        throw new TSSClientError("Failed precompute route for " + urlStr);
                     }
-
                     connection.disconnect();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    throw new TSSClientError(e.toString());
                 }
             }
         }
@@ -179,10 +161,10 @@ public class TSSClient {
             Counterparties counterparties = new Counterparties(partyArray);
             Precompute result = signer.precompute(counterparties, rng, comm);
             consumed = false;
-            EventQueue.shared().addEvent(new Event("precompute_complete", session, (int) index, new Date(), EventType.PRECOMPUTE_COMPLETE));
+            EventQueue.shared().addEvent(new Event("precompute_complete", session, index, new Date(), EventType.PRECOMPUTE_COMPLETE));
             return result;
         } catch (DKLSError error) {
-            EventQueue.shared().addEvent(new Event("precompute_failed", session, (int) index, new Date(), EventType.PRECOMPUTE_ERROR));
+            EventQueue.shared().addEvent(new Event("precompute_failed", session, index, new Date(), EventType.PRECOMPUTE_ERROR));
             throw new TSSClientError(error.getMessage());
         }
     }
@@ -198,8 +180,8 @@ public class TSSClient {
                 throw new TSSClientError("This instance has already signed a message and cannot be reused");
             }
 
-            int precomputesComplete = EventQueue.shared().countEvents(session).getOrDefault(EventType.PRECOMPUTE_COMPLETE, 0);
-            if (precomputesComplete != parties) {
+            Integer precomputesComplete = EventQueue.shared().countEvents(session).getOrDefault(EventType.PRECOMPUTE_COMPLETE, 0);
+            if (precomputesComplete == null || precomputesComplete != parties) {
                 throw new TSSClientError("Insufficient Precomputes");
             }
 
@@ -238,21 +220,22 @@ public class TSSClient {
                     msg.put("hash_algo", "keccak256");
                     msg.put("signatures", signatures);
 
-                    String jsonData = new ObjectMapper().writeValueAsString(msg);
-                    JsonObject data = new Gson().fromJson(jsonData, JsonObject.class);
+
+                    Gson gson = new Gson();
+                    byte[] data = gson.toJson(msg).getBytes(StandardCharsets.UTF_8);
                     connection.setDoOutput(true);
                     try (DataOutputStream out = new DataOutputStream(connection.getOutputStream())) {
-                        out.write(data.toString().getBytes(StandardCharsets.UTF_8));
+                        out.write(data);
                         out.flush();
                     }
 
                     if (connection.getResponseCode() != 200) {
-                        System.out.println("Failed send route for " + urlStr);
+                        throw new TSSClientError("Failed send route for " + urlStr);
                     }
 
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                         String response = reader.lines().collect(Collectors.joining());
-                        Map<String, String> responseMap = new ObjectMapper().readValue(response, new TypeReference<Map<String, String>>() {
+                        Map<String, String> responseMap = new ObjectMapper().readValue(response, new TypeReference<>() {
                         });
                         String signatureFragment = responseMap.entrySet().iterator().next().getValue();
                         fragments.add(signatureFragment);
@@ -278,16 +261,17 @@ public class TSSClient {
             BigInteger s = new BigInteger(sighex.substring(64), 16);
             byte recoveryParam = (byte) (decoded_r[decoded_r.length - 1] % 2);
 
-            if (_sLessThanHalf) {
+            // boolean _sLessThanHalf = true;
+            // if (_sLessThanHalf) {
                 BigInteger halfOfSecp256k1n = Secp256k1.HALF_CURVE_ORDER;
                 if (s.compareTo(halfOfSecp256k1n) > 0) {
                     s = Secp256k1.CURVE.getN().subtract(s);
                     recoveryParam = (byte) ((recoveryParam + 1) % 2);
                 }
-            }
+            // }
 
             consumed = true;
-            return new Triple(s, r, recoveryParam);
+            return new Triple<>(s, r, recoveryParam);
         } catch (Exception | DKLSError e) {
             throw new TSSClientError(e.getMessage());
         }
@@ -303,86 +287,125 @@ public class TSSClient {
     }
 
     public boolean isReady() throws TSSClientError {
-        // TODO: Add timeout here
+        return isReady(5000);
+    }
+
+    public boolean isReady(Integer timeout) throws TSSClientError {
+        Date now = new Date();
+        int offset = timeout != null ? timeout : 5000;
+        boolean result = false;
         try {
-            Map<EventType, Integer> counts = EventQueue.shared().countEvents(session);
-            Integer precomputeErrorCount = counts.getOrDefault(EventType.PRECOMPUTE_ERROR, 0);
+            while (new Date().getTime() < now.getTime() + offset) {
+                Map<EventType, Integer> counts = EventQueue.shared().countEvents(session);
+                Integer precomputeErrorCount = counts.getOrDefault(EventType.PRECOMPUTE_ERROR, 0);
+                if (precomputeErrorCount != null && precomputeErrorCount > 0) {
+                    throw new TSSClientError("Error occurred during precompute");
+                }
 
-            if (precomputeErrorCount > 0) {
-                throw new TSSClientError("Error occurred during precompute");
+                Integer socketDataError = counts.getOrDefault(EventType.SOCKET_DATA_ERROR, 0);
+                if (socketDataError != null && socketDataError > 0) {
+                    throw new TSSClientError("Servers responded with invalid data");
+                }
+
+                Integer precomputeCompleteCount = counts.getOrDefault(EventType.PRECOMPUTE_COMPLETE, 0);
+                if (precomputeCompleteCount != null && precomputeCompleteCount.equals(parties)) {
+                    result = true;
+                    break;
+                }
             }
-
-            Integer precomputeCompleteCount = counts.getOrDefault(EventType.PRECOMPUTE_COMPLETE, 0);
-            assert precomputeCompleteCount != null;
-            return precomputeCompleteCount.equals(parties);
         } catch (Exception e) {
             throw new TSSClientError(e.getMessage());
         }
+        return result;
     }
 
-    public boolean checkConnected() {
-        // TODO: Add timeout here
+    public boolean checkConnected() throws TSSClientError {
+        return checkConnected(5000);
+    }
+
+    public boolean checkConnected(Integer timeout) throws TSSClientError {
+        Date now = new Date();
+        int offset = timeout != null ? timeout : 5000;
+        boolean result = false;
         int connections = 0;
         List<Integer> connectedParties = new ArrayList<>();
 
-        for (int party_index = 0; party_index < parties; party_index++) {
-            if (party_index != index) {
-                if (!connectedParties.contains(party_index)) {
-                    try {
-                        TSSSocket socketConnection = TSSConnectionInfo.getShared().lookupEndpoint(session, party_index).second;
-                        if (socketConnection == null || socketConnection.getSocket() == null) {
-                            continue;
+        while (new Date().getTime() < now.getTime() + offset) {
+            for (int party_index = 0; party_index < parties; party_index++) {
+                if (party_index != index) {
+                    if (!connectedParties.contains(party_index)) {
+                        try {
+                            Socket socketConnection = TSSConnectionInfo.getShared().lookupEndpoint(session, party_index).second.getSocket();
+                            if (socketConnection == null) {
+                                continue;
+                            }
+                            if (socketConnection.connected() &&
+                                    socketConnection.id() != null) {
+                                connections++;
+                                connectedParties.add(party_index);
+                            }
+                        } catch (Exception ex) {
+                            throw new TSSClientError(ex.toString());
                         }
-                        if (socketConnection.getSocket().connected() &&
-                                socketConnection.getSocket().id() != null) {
-                            connections++;
-                            connectedParties.add(party_index);
-                        }
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
                     }
                 }
             }
+
+            if (connections == parties -1) {
+                result = true;
+                break;
+            }
         }
-        return connections == (parties - 1);
+        return result;
     }
 
-    public void cleanup(String[] signatures) throws Exception {
+    public void cleanup(String[] signatures) throws TSSClientError {
         MessageQueue.shared().removeMessages(this.session);
         EventQueue.shared().removeEvents(this.session);
-        boolean consumed = false;
-        boolean ready = false;
+        consumed = false;
 
         for (int i = 0; i < this.parties; i++) {
             if (i != this.index) {
-                Pair<TSSEndpoint, TSSSocket> tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(this.session, i);
-                String url = tssConnection.first.getUrl();
-                URL endpoint = new URL(url + "/cleanup");
-                HttpURLConnection connection = (HttpURLConnection) endpoint.openConnection();
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("Access-Control-Allow-Origin", "*");
-                connection.setRequestProperty("Access-Control-Allow-Methods", "GET, POST");
-                connection.setRequestProperty("Access-Control-Allow-Headers", "Content-Type");
-                connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
+                try {
+                    Pair<TSSEndpoint, TSSSocket> tssConnection = TSSConnectionInfo.getShared().lookupEndpoint(this.session, i);
+                    String url = tssConnection.first.getUrl();
+                    URL endpoint = new URL(url + "/cleanup");
+                    HttpURLConnection connection = (HttpURLConnection) endpoint.openConnection();
+                    connection.setRequestMethod("POST");
+                    connection.setRequestProperty("Access-Control-Allow-Origin", "*");
+                    connection.setRequestProperty("Access-Control-Allow-Methods", "GET, POST");
+                    connection.setRequestProperty("Access-Control-Allow-Headers", "Content-Type");
+                    connection.setRequestProperty("Content-Type", "application/json");
+                    connection.setRequestProperty("x-web3-session-id", TSSClient.sid(session));
 
-                LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
-                msg.put("session", session);
-                msg.put("signatures", signatures);
+                    LinkedHashMap<String, Object> msg = new LinkedHashMap<>();
+                    msg.put("session", session);
+                    msg.put("signatures", signatures);
 
-                Gson gson = new Gson();
-                byte[] data = gson.toJson(msg).getBytes(StandardCharsets.UTF_8);
-                connection.setDoOutput(true);
-                OutputStream out = connection.getOutputStream();
-                out.write(data);
+                    Gson gson = new Gson();
+                    byte[] data = gson.toJson(msg).getBytes(StandardCharsets.UTF_8);
+                    connection.setDoOutput(true);
+                    OutputStream out = connection.getOutputStream();
+                    out.write(data);
 
-                int responseCode = connection.getResponseCode();
-                if (responseCode != 200) {
-                    System.out.println("Failed to cleanup for " + url);
+                    int responseCode = connection.getResponseCode();
+                    if (responseCode != 200) {
+                        throw new TSSClientError("Failed to cleanup for " + url);
+                    }
+
+                    connection.disconnect();
+                } catch (Exception e) {
+                    throw new TSSClientError(e.toString());
                 }
-
-                connection.disconnect();
             }
         }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        TSSConnectionInfo.getShared().removeAll(session);
+        MessageQueue.shared().removeMessages(session);
+        EventQueue.shared().removeEvents(session);
     }
 }

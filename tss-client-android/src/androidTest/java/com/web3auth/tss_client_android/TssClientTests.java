@@ -6,8 +6,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.google.gson.Gson;
 import com.web3auth.tss_client_android.client.EndpointsData;
 import com.web3auth.tss_client_android.client.TSSClient;
+import com.web3auth.tss_client_android.client.TSSClientError;
 import com.web3auth.tss_client_android.client.TSSHelpers;
 import com.web3auth.tss_client_android.client.util.Secp256k1;
+import com.web3auth.tss_client_android.client.util.Triple;
 import com.web3auth.tss_client_android.dkls.DKLSError;
 import com.web3auth.tss_client_android.dkls.Precompute;
 
@@ -32,8 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import kotlin.Triple;
 
 @RunWith(AndroidJUnit4.class)
 public class TssClientTests {
@@ -205,7 +205,7 @@ public class TssClientTests {
                             }
 
                             conn.disconnect();
-                        } catch (IOException e) {
+                        } catch (IOException | TSSClientError e) {
                             throw new RuntimeException(e);
                         } finally {
                             latch.countDown();
@@ -291,14 +291,10 @@ public class TssClientTests {
         client = new TSSClient(session, clientIndex, partyIndexes.stream().mapToInt(Integer::intValue).toArray(),
                 endpoints.toArray(new String[0]), socketEndpoints.toArray(new String[0]),
                 TSSHelpers.base64Share(share), TSSHelpers.base64PublicKey(publicKey.toByteArray()));
-        while (!client.checkConnected()) {
-            // no-op
-        }
+        assert(client.checkConnected());
         System.out.println("Reached here");
         Precompute precompute = client.precompute(coeffs, sigs);
-        while (!client.isReady()) {
-            // no-op
-        }
+        assert(client.isReady());
 
         Triple<BigInteger, BigInteger, Byte> signatureResult = client.sign(msgHash, true, msg, precompute, sigs);
         client.cleanup(sigs.toArray(new String[0]));

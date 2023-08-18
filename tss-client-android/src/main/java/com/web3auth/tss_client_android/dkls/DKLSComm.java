@@ -45,7 +45,8 @@ public final class DKLSComm {
                     break;
                 } else {
                     Map<EventType, Integer> counts = EventQueue.shared().countEvents(session);
-                    if (counts.get(EventType.PRECOMPUTE_ERROR) != null && counts.get(EventType.PRECOMPUTE_ERROR) > 0) {
+                    Integer count = counts.get(EventType.PRECOMPUTE_ERROR);
+                    if (count != null && count > 0) {
                         break;
                     }
                 }
@@ -67,10 +68,8 @@ public final class DKLSComm {
             String[] msgTypeParts = msgType.split("~");
             if (msgTypeParts.length >= 2) {
                 String tag = msgTypeParts[1];
-                System.out.println("dkls: Sending message " + tag + ", sender: " + index + ", receiver: " + remote);
                 TssSendMsg msg = new TssSendMsg(session, index.intValue(), remote.intValue(), msgType, msgData);
                 if (tsssocket != null && tsssocket.getSocket() != null) {
-                    System.out.println("socket send websocket: " + tsssocket.getSocket().id() + ": " + index + "->" + remote + ", " + msgType);
                     tsssocket.getSocket().emit("send_msg", msg.toJsonObject());
                     return true;
                 }

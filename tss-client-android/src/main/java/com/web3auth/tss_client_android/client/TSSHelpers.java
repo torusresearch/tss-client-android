@@ -115,11 +115,11 @@ public class TSSHelpers {
         ECPoint parsedUserSharePubKey = curve.decodePoint(userSharePubKey);
 
         if (parsedDkgPubKey == null) {
-            throw new TorusException("dkgPublicKey is invalid");
+            throw new TSSClientError("dkgPublicKey is invalid");
         }
 
         if (parsedUserSharePubKey == null) {
-            throw new TorusException("userSharePubKey is invalid");
+            throw new TSSClientError("userSharePubKey is invalid");
         }
 
         byte[] serverLagrangeCoeffData = TSSHelpers.ensureDataLengthIs32Bytes(serverLagrangeCoefficient.toByteArray());
