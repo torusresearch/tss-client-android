@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.web3auth.tss_client_android.client.util.Secp256k1;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;
 import com.web3auth.tss_client_android.dkls.DKLSComm;
@@ -42,11 +43,6 @@ import java.util.stream.IntStream;
 import kotlin.Triple;
 
 public class TSSClient {
-
-    private static final String CURVE_N = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141";
-    public static final BigInteger modulusValueUnsigned = new BigInteger(CURVE_N, 16);
-    public static final BigInteger modulusValueSigned = new BigInteger(CURVE_N, 16);
-
     private final String session;
     private final int parties;
     private final ThresholdSigner signer;
@@ -285,9 +281,9 @@ public class TSSClient {
             byte recoveryParam = (byte) (decoded_r[decoded_r.length - 1] % 2);
 
             if (_sLessThanHalf) {
-                BigInteger halfOfSecp256k1n = TSSClient.modulusValueSigned.divide(BigInteger.valueOf(2));
+                BigInteger halfOfSecp256k1n = Secp256k1.HALF_CURVE_ORDER;
                 if (s.compareTo(halfOfSecp256k1n) > 0) {
-                    s = TSSClient.modulusValueSigned.subtract(s);
+                    s = Secp256k1.CURVE.getN().subtract(s);
                     recoveryParam = (byte) ((recoveryParam + 1) % 2);
                 }
             }

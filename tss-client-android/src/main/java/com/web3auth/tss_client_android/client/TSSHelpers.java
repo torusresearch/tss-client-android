@@ -221,10 +221,10 @@ public class TSSHelpers {
 
         if (isUser) {
             BigInteger denormaliseCoeff = TSSHelpers.getDenormalizedCoefficient(userPartyIndex, parties);
-            return denormaliseCoeff.multiply(additiveCoeff).mod(TSSClient.modulusValueSigned);
+            return denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
         } else {
             BigInteger denormaliseCoeff = TSSHelpers.getDenormalizedCoefficient(serverPartyIndex, parties);
-            return denormaliseCoeff.multiply(additiveCoeff).mod(TSSClient.modulusValueSigned);
+            return denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
         }
     }
 
@@ -307,7 +307,7 @@ public class TSSHelpers {
     public static BigInteger denormalizeShare(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex, BigInteger userTssShare) throws TSSClientError {
         try {
             BigInteger coeff = getDKLSCoefficient(true, List.of(participatingServerDKGIndexes), userTssIndex, null);
-            BigInteger denormalizeShare = coeff.multiply(userTssShare).mod(TSSClient.modulusValueSigned);
+            BigInteger denormalizeShare = coeff.multiply(userTssShare).mod(Secp256k1.CURVE.getN());
             return denormalizeShare;
         } catch (Exception e) {
             throw new TSSClientError(e.getMessage());

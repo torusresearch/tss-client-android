@@ -1,5 +1,7 @@
 package com.web3auth.tss_client_android.client;
 
+import com.web3auth.tss_client_android.client.util.Secp256k1;
+
 import org.bouncycastle.jce.ECNamedCurveTable;
 import org.bouncycastle.jce.spec.ECNamedCurveParameterSpec;
 import org.bouncycastle.math.ec.ECPoint;
@@ -23,7 +25,6 @@ import io.socket.client.Socket;
 public class Utils {
 
     private static final SecureRandom secureRandom = new SecureRandom();
-    public static final BigInteger secp256k1N = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16);
     public static List<String> torusNodeEndpoints = Arrays.asList(
             "https://sapphire-1.auth.network/sss/jrpc",
             "https://sapphire-2.auth.network/sss/jrpc",
@@ -66,15 +67,15 @@ public class Utils {
         BigInteger lower = new BigInteger("1");
         for (BigInteger index : allIndexes) {
             if (myIndex.compareTo(index) != 0) {
-                BigInteger tempUpper = target.subtract(index).mod(secp256k1N);
-                upper = upper.multiply(tempUpper).mod(secp256k1N);
+                BigInteger tempUpper = target.subtract(index).mod(Secp256k1.CURVE.getN());
+                upper = upper.multiply(tempUpper).mod(Secp256k1.CURVE.getN());
 
-                BigInteger tempLower = myIndex.subtract(index).mod(secp256k1N);
-                lower = lower.multiply(tempLower).mod(secp256k1N);
+                BigInteger tempLower = myIndex.subtract(index).mod(Secp256k1.CURVE.getN());
+                lower = lower.multiply(tempLower).mod(Secp256k1.CURVE.getN());
             }
         }
-        BigInteger invLower = lower.modInverse(secp256k1N);
-        return upper.multiply(invLower).mod(secp256k1N);
+        BigInteger invLower = lower.modInverse(Secp256k1.CURVE.getN());
+        return upper.multiply(invLower).mod(Secp256k1.CURVE.getN());
     }
 
     public static String padLeft(String inputString, Character padChar, int length) {
@@ -98,7 +99,7 @@ public class Utils {
         }
         BigInteger serverLagrangeCoeff = getLagrangeCoeffs(participatingServerIndexes, serverIndex);
         BigInteger masterLagrangeCoeff = getLagrangeCoeffs(new BigInteger[]{new BigInteger("1"), userTSSIndex}, new BigInteger("1"));
-        BigInteger additiveLagrangeCoeff = serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(secp256k1N);
+        BigInteger additiveLagrangeCoeff = serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(Secp256k1.CURVE.getN());
         System.out.println("Additive Coeff: " + additiveLagrangeCoeff);
         return additiveLagrangeCoeff;
     }
@@ -108,7 +109,7 @@ public class Utils {
             throw new IllegalArgumentException("party " + party + " not found in parties " + parties);
         }
 
-        return getLagrangeCoeffs(parties.toArray(new BigInteger[0]), party).modInverse(secp256k1N);
+        return getLagrangeCoeffs(parties.toArray(new BigInteger[0]), party).modInverse(Secp256k1.CURVE.getN());
     }
 
     public static BigInteger getDKLSCoeff(boolean isUser, List<BigInteger> participatingServerIndexes,
@@ -141,12 +142,12 @@ public class Utils {
         if (isUser) {
             BigInteger additiveCoeff = getAdditiveCoeff(true, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
             BigInteger denormaliseCoeff = getDenormaliseCoeff(userPartyIndex, parties);
-            return denormaliseCoeff.multiply(additiveCoeff).mod(secp256k1N);
+            return denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
         }
 
         BigInteger additiveCoeff = getAdditiveCoeff(false, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
         BigInteger denormaliseCoeff = getDenormaliseCoeff(BigInteger.valueOf(serverPartyIndex), parties);
-        coeff = denormaliseCoeff.multiply(additiveCoeff).mod(secp256k1N);
+        coeff = denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
         return coeff;
     }
 
