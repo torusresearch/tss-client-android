@@ -17,11 +17,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class TSSHelpers {
-
-    public static final BigInteger secp256k1N = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141", 16);
-
     private TSSHelpers() {
     }
 
@@ -160,15 +158,15 @@ public class TSSHelpers {
         BigInteger lower = new BigInteger("1");
         for (BigInteger index : allIndexes) {
             if (myIndex.compareTo(index) != 0) {
-                BigInteger tempUpper = target.subtract(index).mod(secp256k1N);
-                upper = upper.multiply(tempUpper).mod(secp256k1N);
+                BigInteger tempUpper = target.subtract(index).mod(Secp256k1.CURVE.getN());
+                upper = upper.multiply(tempUpper).mod(Secp256k1.CURVE.getN());
 
-                BigInteger tempLower = myIndex.subtract(index).mod(secp256k1N);
-                lower = lower.multiply(tempLower).mod(secp256k1N);
+                BigInteger tempLower = myIndex.subtract(index).mod(Secp256k1.CURVE.getN());
+                lower = lower.multiply(tempLower).mod(Secp256k1.CURVE.getN());
             }
         }
-        BigInteger invLower = lower.modInverse(secp256k1N);
-        return upper.multiply(invLower).mod(secp256k1N);
+        BigInteger invLower = lower.modInverse(Secp256k1.CURVE.getN());
+        return upper.multiply(invLower).mod(Secp256k1.CURVE.getN());
     }
 
     public static BigInteger getAdditiveCoefficient(boolean isUser, BigInteger[] participatingServerIndexes, BigInteger userTSSIndex, BigInteger serverIndex) throws TSSClientError {
@@ -178,7 +176,7 @@ public class TSSHelpers {
         if (serverIndex != null) {
             BigInteger serverLagrangeCoeff = getLagrangeCoefficients(participatingServerIndexes, serverIndex);
             BigInteger masterLagrangeCoeff = getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTSSIndex}, BigInteger.ONE);
-            BigInteger additiveLagrangeCoeff = serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(secp256k1N);
+            BigInteger additiveLagrangeCoeff = serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(Secp256k1.CURVE.getN());
             return additiveLagrangeCoeff;
         } else {
             throw new TSSClientError("isUser is false, serverIndex must be supplied");
@@ -190,7 +188,7 @@ public class TSSHelpers {
             throw new IllegalArgumentException("party " + party + " not found in parties " + parties);
         }
 
-        BigInteger denormaliseLagrangeCoeff = getLagrangeCoefficients(parties.toArray(new BigInteger[0]), party).modInverse(secp256k1N);
+        BigInteger denormaliseLagrangeCoeff = getLagrangeCoefficients(parties.toArray(new BigInteger[0]), party).modInverse(Secp256k1.CURVE.getN());
         return denormaliseLagrangeCoeff;
     }
 
@@ -323,5 +321,145 @@ public class TSSHelpers {
             hexString.append(String.format("%02X", b));
         }
         return hexString.toString();
+    }
+
+    public static EndpointsData generateEndpoints(int parties, int clientIndex) {
+        List<String> endpoints = new ArrayList<>();
+        List<String> tssWSEndpoints = new ArrayList<>();
+        List<Integer> partyIndexes = new ArrayList<>();
+        for (int i = 0; i < parties; i++) {
+            partyIndexes.add(i);
+            if (i == clientIndex) {
+                endpoints.add(null);
+                tssWSEndpoints.add(null);
+            } else {
+                endpoints.add("https://sapphire-" + (i + 1) + ".auth.network/tss");
+                tssWSEndpoints.add("https://sapphire-" + (i + 1) + ".auth.network");
+            }
+        }
+        return new EndpointsData(endpoints, tssWSEndpoints, partyIndexes);
+    }
+
+    public static ECPoint getTSSPubKey(Key dkgPubKey, Key userSharePubKey, BigInteger userTSSIndex) {
+        BigInteger serverLagrangeCoeff = getLagrangeCoeffs(new BigInteger[]{new BigInteger("1"), userTSSIndex}, new BigInteger("1"));
+        BigInteger userLagrangeCoeff = getLagrangeCoeffs(new BigInteger[]{new BigInteger("1"), userTSSIndex}, userTSSIndex);
+
+        ECPoint serverTerm = ecPoint(dkgPubKey.getX(), dkgPubKey.getY()).multiply(serverLagrangeCoeff);
+        ECPoint userTerm = ecPoint(userSharePubKey.getX(), userSharePubKey.getY()).multiply(userLagrangeCoeff);
+        return serverTerm.add(userTerm);
+    }
+
+     /*public static BigInteger getLagrangeCoeffs(BigInteger[] shares, BigInteger[] nodeIndex) {
+        if (shares.length != nodeIndex.length) {
+            return null;
+        }
+        BigInteger secret = new BigInteger("0");
+        for (int i = 0; i < shares.length; i++) {
+            BigInteger upper = new BigInteger("1");
+            BigInteger lower = new BigInteger("1");
+            for (int j = 0; j < shares.length; j++) {
+                if (i != j) {
+                    upper = upper.multiply(nodeIndex[j].negate());
+                    upper = upper.mod(secp256k1N);
+                    BigInteger temp = nodeIndex[i].subtract(nodeIndex[j]);
+                    temp = temp.mod(secp256k1N);
+                    lower = lower.multiply(temp).mod(secp256k1N);
+                }
+            }
+            BigInteger delta = upper.multiply(lower.modInverse(secp256k1N)).mod(secp256k1N);
+            delta = delta.multiply(shares[i]).mod(secp256k1N);
+            secret = secret.add(delta);
+        }
+        return secret.mod(secp256k1N);
+    }*/
+
+    public static BigInteger getLagrangeCoeffs(BigInteger[] allIndexes, BigInteger myIndex) {
+        BigInteger target = new BigInteger("0");
+        BigInteger upper = new BigInteger("1");
+        BigInteger lower = new BigInteger("1");
+        for (BigInteger index : allIndexes) {
+            if (myIndex.compareTo(index) != 0) {
+                BigInteger tempUpper = target.subtract(index).mod(Secp256k1.CURVE.getN());
+                upper = upper.multiply(tempUpper).mod(Secp256k1.CURVE.getN());
+
+                BigInteger tempLower = myIndex.subtract(index).mod(Secp256k1.CURVE.getN());
+                lower = lower.multiply(tempLower).mod(Secp256k1.CURVE.getN());
+            }
+        }
+        BigInteger invLower = lower.modInverse(Secp256k1.CURVE.getN());
+        return upper.multiply(invLower).mod(Secp256k1.CURVE.getN());
+    }
+
+    public static String padLeft(String inputString, Character padChar, int length) {
+        if (inputString.length() >= length) return inputString;
+        StringBuilder sb = new StringBuilder();
+        while (sb.length() < length - inputString.length()) {
+            sb.append(padChar);
+        }
+        sb.append(inputString);
+        return sb.toString();
+    }
+
+    public static ECPoint ecPoint(String x, String y) {
+        return Secp256k1.CURVE.getCurve().createPoint(new BigInteger(padLeft(x, '0', 64), 16),
+                new BigInteger(padLeft(y, '0', 64), 16));
+    }
+
+    public static BigInteger getAdditiveCoeff(boolean isUser, BigInteger[] participatingServerIndexes, BigInteger userTSSIndex, BigInteger serverIndex) {
+        if (isUser) {
+            return getLagrangeCoeffs(new BigInteger[]{new BigInteger("1"), userTSSIndex}, userTSSIndex);
+        }
+        BigInteger serverLagrangeCoeff = getLagrangeCoeffs(participatingServerIndexes, serverIndex);
+        BigInteger masterLagrangeCoeff = getLagrangeCoeffs(new BigInteger[]{new BigInteger("1"), userTSSIndex}, new BigInteger("1"));
+        BigInteger additiveLagrangeCoeff = serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(Secp256k1.CURVE.getN());
+        System.out.println("Additive Coeff: " + additiveLagrangeCoeff);
+        return additiveLagrangeCoeff;
+    }
+
+    public static BigInteger getDenormaliseCoeff(BigInteger party, List<BigInteger> parties) {
+        if (!parties.contains(party)) {
+            throw new IllegalArgumentException("party " + party + " not found in parties " + parties);
+        }
+
+        return getLagrangeCoeffs(parties.toArray(new BigInteger[0]), party).modInverse(Secp256k1.CURVE.getN());
+    }
+
+    public static BigInteger getDKLSCoeff(boolean isUser, List<BigInteger> participatingServerIndexes,
+                                          BigInteger userTSSIndex, BigInteger serverIndex) {
+        List<BigInteger> sortedServerIndexes = new ArrayList<>(participatingServerIndexes);
+        Collections.sort(sortedServerIndexes);
+
+        for (int i = 0; i < sortedServerIndexes.size(); i++) {
+            if (!Objects.equals(sortedServerIndexes.get(i), participatingServerIndexes.get(i))) {
+                throw new IllegalArgumentException("server indexes must be sorted");
+            }
+        }
+
+        List<BigInteger> parties = new ArrayList<>();
+
+        // total number of parties for DKLS = total number of servers + 1 (user is the last party)
+        // server party indexes
+        int serverPartyIndex = 0;
+        for (int i = 0; i < participatingServerIndexes.size(); i++) {
+            int currentPartyIndex = i + 1;
+            parties.add(BigInteger.valueOf(currentPartyIndex));
+            if (Objects.equals(participatingServerIndexes.get(i), serverIndex)) {
+                serverPartyIndex = currentPartyIndex;
+            }
+        }
+        BigInteger userPartyIndex = BigInteger.valueOf(parties.size() + 1);
+        parties.add(userPartyIndex); // user party index
+
+        BigInteger coeff;
+        if (isUser) {
+            BigInteger additiveCoeff = getAdditiveCoeff(true, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
+            BigInteger denormaliseCoeff = getDenormaliseCoeff(userPartyIndex, parties);
+            return denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
+        }
+
+        BigInteger additiveCoeff = getAdditiveCoeff(false, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
+        BigInteger denormaliseCoeff = getDenormaliseCoeff(BigInteger.valueOf(serverPartyIndex), parties);
+        coeff = denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
+        return coeff;
     }
 }

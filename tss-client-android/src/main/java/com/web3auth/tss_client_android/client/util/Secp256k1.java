@@ -1,14 +1,9 @@
 package com.web3auth.tss_client_android.client.util;
-
 import android.util.Base64;
-
-import com.web3auth.tss_client_android.client.Utils;
 
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DLSequence;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.asn1.x9.X9IntegerConverter;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
@@ -30,9 +25,11 @@ import org.bouncycastle.util.encoders.Hex;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.util.Arrays;
 
 public class Secp256k1 {
+    private static SecureRandom secureRandom = new SecureRandom();
 
     // The parameters of the secp256k1 curve that Bitcoin uses.
     private static final X9ECParameters CURVE_PARAMS = CustomNamedCurves.getByName("secp256k1");
@@ -61,7 +58,7 @@ public class Secp256k1 {
 
     public static byte[] GenerateECKey() {
         ECKeyPairGenerator generator = new ECKeyPairGenerator();
-        ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(CURVE, Utils.SecureRandom());
+        ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(CURVE, secureRandom);
         generator.init(keygenParams);
         AsymmetricCipherKeyPair keypair = generator.generateKeyPair();
         ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate();
@@ -79,15 +76,11 @@ public class Secp256k1 {
         return point.getEncoded(false);
     }
 
-    public static ECPoint parsePublicKey(byte[] serializedKey) throws IOException {
+    public static ECPoint parsePublicKey(byte[] serializedKey) {
         int keyLen = serializedKey.length;
         if (keyLen != 33 && keyLen != 65) {
             return null;
         }
-
-        SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(
-                ASN1Sequence.getInstance(serializedKey));
-        byte[] otherEncoded = subjectPublicKeyInfo.parsePublicKey().getEncoded();
 
         byte[] keyBytes = Arrays.copyOf(serializedKey, keyLen);
         if (keyLen == 65 && keyBytes[0] == 0x04) {

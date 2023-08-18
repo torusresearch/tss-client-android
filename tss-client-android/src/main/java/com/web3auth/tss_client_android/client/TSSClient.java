@@ -4,6 +4,7 @@ import androidx.core.util.Pair;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.web3auth.tss_client_android.client.util.ByteUtils;
 import com.web3auth.tss_client_android.client.util.Secp256k1;
 import com.web3auth.tss_client_android.client.util.Triple;
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
@@ -256,7 +257,7 @@ public class TSSClient {
             String precompute_r = precompute.getR();
             byte[] decoded_r = android.util.Base64.decode(precompute_r, Base64.NO_WRAP);
             byte[] decoded = android.util.Base64.decode(signature, Base64.NO_WRAP);
-            String sighex = Utils.convertByteToHexadecimal(decoded);
+            String sighex = ByteUtils.convertByteToHexadecimal(decoded);
             BigInteger r = new BigInteger(sighex.substring(0, 64), 16);
             BigInteger s = new BigInteger(sighex.substring(64), 16);
             byte recoveryParam = (byte) (decoded_r[decoded_r.length - 1] % 2);
