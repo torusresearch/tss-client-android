@@ -21,7 +21,7 @@ public class TssHelpersTests {
     public void testGetLagrange() {
         BigInteger[] parties = {new BigInteger("50"), new BigInteger("100")};
         BigInteger party = new BigInteger("10");
-        BigInteger result = TSSHelpers.getLagrangeCoefficients(parties, party);
+        BigInteger result = TSSHelpers.getLagrangeCoefficient(parties, party);
         String expected = TSSHelpers.addLeadingZerosForLength64("f1c71c71c71c71c71c71c71c71c71c7093de09848919ecaa352a3cda52dde84d");
         assertEquals(expected, result.toString(16));
     }

@@ -1,15 +1,10 @@
 package com.web3auth.tss_client_android.client;
-
 import android.util.Base64;
-
 import com.web3auth.tss_client_android.client.util.Secp256k1;
-
-import org.bouncycastle.asn1.x9.ECNamedCurveTable;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.web3j.crypto.Hash;
-
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -17,7 +12,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 public class TSSHelpers {
     private TSSHelpers() {
@@ -26,14 +20,6 @@ public class TSSHelpers {
     public static String hashMessage(String message) {
         byte[] hashedData = Hash.sha3(message.getBytes(StandardCharsets.UTF_8));
         return android.util.Base64.encodeToString(hashedData, android.util.Base64.NO_WRAP);
-    }
-
-    public static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
     }
 
     public static String base64Share(BigInteger share) throws TSSClientError {
@@ -49,6 +35,17 @@ public class TSSHelpers {
 
         // Base64 encode the last 32 bytes
         return android.util.Base64.encodeToString(last32Bytes, Base64.NO_WRAP);
+    }
+
+    public static boolean verifySignature(String msgHash, BigInteger s, BigInteger r, byte v, byte[] pubKey) {
+        byte[] pk = TSSHelpers.recoverPublicKey(msgHash, s, r, v);
+        return java.util.Arrays.equals(pk, pubKey);
+    }
+
+    public static byte[] recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) {
+        Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
+        byte[] msgData = android.util.Base64.decode(msgHash, android.util.Base64.NO_WRAP);
+        return Secp256k1.RecoverPubBytesFromSignature(msgData, signature.toByteArray());
     }
 
     public static String base64PublicKey(byte[] pubKey) throws TSSClientError {
@@ -67,26 +64,30 @@ public class TSSHelpers {
     }
 
     public static String hexUncompressedPublicKey(byte[] pubKey, boolean return64Bytes) throws TSSClientError {
-        if (pubKey.length == 65 && return64Bytes) {
-            // Check if the first byte is 0x04 indicating uncompressed format
-            if (pubKey[0] == 0x04) {
-                byte[] droppedPrefix = new byte[pubKey.length - 1];
-                System.arraycopy(pubKey, 1, droppedPrefix, 0, droppedPrefix.length);
-                return bytesToHex(droppedPrefix);
+        if (pubKey.length == 65) {
+            if (return64Bytes) {
+                // Check if the first byte is 0x04 indicating uncompressed format
+                if (pubKey[0] == 0x04) {
+                    byte[] droppedPrefix = new byte[pubKey.length - 1];
+                    System.arraycopy(pubKey, 1, droppedPrefix, 0, droppedPrefix.length);
+                    return bytesToHex(droppedPrefix);
+                } else {
+                    throw new TSSClientError("Invalid public key bytes");
+                }
             } else {
-                throw new TSSClientError("Invalid public key bytes");
+                return bytesToHex(pubKey);
             }
-        } else if (!return64Bytes) {
-            return bytesToHex(pubKey);
         }
 
-        if (pubKey.length == 65 && !return64Bytes) {
-            return bytesToHex(pubKey);
-        } else if (return64Bytes) { // first byte should be 0x04 prefix
-            byte[] prefixedPK = new byte[pubKey.length + 1];
-            prefixedPK[0] = 0x04;
-            System.arraycopy(pubKey, 0, prefixedPK, 1, pubKey.length);
-            return bytesToHex(prefixedPK);
+        if (pubKey.length == 64) {
+            if (return64Bytes) {
+                return bytesToHex(pubKey);
+            } else { // first byte should be 0x04 prefix
+                byte[] prefixedPK = new byte[pubKey.length + 1];
+                prefixedPK[0] = 0x04;
+                System.arraycopy(pubKey, 0, prefixedPK, 1, pubKey.length);
+                return bytesToHex(prefixedPK);
+            }
         }
 
         throw new TSSClientError("Invalid public key bytes");
@@ -98,17 +99,51 @@ public class TSSHelpers {
                 .replace("=", "");
     }
 
-    public static String hexSignature(BigInteger s, BigInteger r, byte v) throws TSSClientError {
+    public static String hexSignature(BigInteger s, BigInteger r, byte v) {
         Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
         return signature.toHex();
     }
 
+    public static Map<String, String> getServerCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
+        LinkedHashMap<String, String> serverCoeffs = new LinkedHashMap<>();
+        for (BigInteger participatingServerIndex : participatingServerDKGIndexes) {
+            BigInteger coefficient = TSSHelpers.getDKLSCoefficient(
+                    false, List.of(participatingServerDKGIndexes), userTssIndex, participatingServerIndex
+            );
+
+            // Values should never contain leading zeros
+            String key = TSSHelpers.removeLeadingZeros(participatingServerIndex.toString(16));
+            String value = TSSHelpers.removeLeadingZeros(coefficient.toString(16));
+            serverCoeffs.put(key, value);
+        }
+
+        return serverCoeffs;
+    }
+
+    public static String getClientCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
+        BigInteger coeff;
+        try {
+            coeff = getDKLSCoefficient(true, List.of(participatingServerDKGIndexes), userTssIndex, null);
+            return serializeToHexString(coeff);
+        } catch (Exception e) {
+            throw new TSSClientError(e.getMessage());
+        }
+    }
+
+    public static BigInteger denormalizeShare(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex, BigInteger userTssShare) throws TSSClientError {
+        try {
+            BigInteger coeff = getDKLSCoefficient(true, List.of(participatingServerDKGIndexes), userTssIndex, null);
+            return coeff.multiply(userTssShare).mod(Secp256k1.CURVE.getN());
+        } catch (Exception e) {
+            throw new TSSClientError(e.getMessage());
+        }
+    }
+
     public static byte[] getFinalTssPublicKey(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws Exception {
-        BigInteger serverLagrangeCoefficient = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{new BigInteger("1"), userTssIndex}, new BigInteger("1"));
-        BigInteger userLagrangeCoefficient = TSSHelpers.getLagrangeCoefficients(new BigInteger[]{new BigInteger("1"), userTssIndex}, userTssIndex);
+        BigInteger serverLagrangeCoefficient = TSSHelpers.getLagrangeCoefficient(new BigInteger[]{new BigInteger("1"), userTssIndex}, new BigInteger("1"));
+        BigInteger userLagrangeCoefficient = TSSHelpers.getLagrangeCoefficient(new BigInteger[]{new BigInteger("1"), userTssIndex}, userTssIndex);
 
-        ECCurve curve = ECNamedCurveTable.getByName("secp256k1").getCurve();
-
+        ECCurve curve = Secp256k1.CURVE.getCurve();
         ECPoint parsedDkgPubKey = curve.decodePoint(dkgPubKey);
         ECPoint parsedUserSharePubKey = curve.decodePoint(userSharePubKey);
 
@@ -132,52 +167,14 @@ public class TSSHelpers {
         return combined.getEncoded(false);
     }
 
-    private static byte[] ensureDataLengthIs32Bytes(byte[] data) {
-        if (data.length == 32) {
-            return data;
-        } else if (data.length > 32) {
-            return Arrays.copyOfRange(data, data.length - 32, data.length);
-        } else {
-            byte[] newData = new byte[32];
-            System.arraycopy(data, 0, newData, 32 - data.length, data.length);
-            return newData;
-        }
-    }
-
-    public static String byteArrayToHexString(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02X", b));
-        }
-        return sb.toString();
-    }
-
-    public static BigInteger getLagrangeCoefficients(BigInteger[] allIndexes, BigInteger myIndex) {
-        BigInteger target = new BigInteger("0");
-        BigInteger upper = new BigInteger("1");
-        BigInteger lower = new BigInteger("1");
-        for (BigInteger index : allIndexes) {
-            if (myIndex.compareTo(index) != 0) {
-                BigInteger tempUpper = target.subtract(index).mod(Secp256k1.CURVE.getN());
-                upper = upper.multiply(tempUpper).mod(Secp256k1.CURVE.getN());
-
-                BigInteger tempLower = myIndex.subtract(index).mod(Secp256k1.CURVE.getN());
-                lower = lower.multiply(tempLower).mod(Secp256k1.CURVE.getN());
-            }
-        }
-        BigInteger invLower = lower.modInverse(Secp256k1.CURVE.getN());
-        return upper.multiply(invLower).mod(Secp256k1.CURVE.getN());
-    }
-
     public static BigInteger getAdditiveCoefficient(boolean isUser, BigInteger[] participatingServerIndexes, BigInteger userTSSIndex, BigInteger serverIndex) throws TSSClientError {
         if (isUser) {
-            return getLagrangeCoefficients(new BigInteger[]{new BigInteger("1"), userTSSIndex}, userTSSIndex);
+            return getLagrangeCoefficient(new BigInteger[]{new BigInteger("1"), userTSSIndex}, userTSSIndex);
         }
         if (serverIndex != null) {
-            BigInteger serverLagrangeCoeff = getLagrangeCoefficients(participatingServerIndexes, serverIndex);
-            BigInteger masterLagrangeCoeff = getLagrangeCoefficients(new BigInteger[]{BigInteger.ONE, userTSSIndex}, BigInteger.ONE);
-            BigInteger additiveLagrangeCoeff = serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(Secp256k1.CURVE.getN());
-            return additiveLagrangeCoeff;
+            BigInteger serverLagrangeCoeff = getLagrangeCoefficient(participatingServerIndexes, serverIndex);
+            BigInteger masterLagrangeCoeff = getLagrangeCoefficient(new BigInteger[]{BigInteger.ONE, userTSSIndex}, BigInteger.ONE);
+            return serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(Secp256k1.CURVE.getN());
         } else {
             throw new TSSClientError("isUser is false, serverIndex must be supplied");
         }
@@ -188,8 +185,7 @@ public class TSSHelpers {
             throw new IllegalArgumentException("party " + party + " not found in parties " + parties);
         }
 
-        BigInteger denormaliseLagrangeCoeff = getLagrangeCoefficients(parties.toArray(new BigInteger[0]), party).modInverse(Secp256k1.CURVE.getN());
-        return denormaliseLagrangeCoeff;
+        return getLagrangeCoefficient(parties.toArray(new BigInteger[0]), party).modInverse(Secp256k1.CURVE.getN());
     }
 
     public static BigInteger getDKLSCoefficient(boolean isUser, List<BigInteger> participatingServerIndexes, BigInteger userTssIndex, BigInteger serverIndex) throws TSSClientError {
@@ -218,51 +214,62 @@ public class TSSHelpers {
 
         BigInteger additiveCoeff = TSSHelpers.getAdditiveCoefficient(isUser, participatingServerIndexes.toArray(new BigInteger[0]), userTssIndex, serverIndex);
 
+        BigInteger denormaliseCoeff;
         if (isUser) {
-            BigInteger denormaliseCoeff = TSSHelpers.getDenormalizedCoefficient(userPartyIndex, parties);
-            return denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
+            denormaliseCoeff = TSSHelpers.getDenormalizedCoefficient(userPartyIndex, parties);
         } else {
-            BigInteger denormaliseCoeff = TSSHelpers.getDenormalizedCoefficient(serverPartyIndex, parties);
-            return denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
+            denormaliseCoeff = TSSHelpers.getDenormalizedCoefficient(serverPartyIndex, parties);
+        }
+        return denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
+    }
+
+    private static byte[] ensureDataLengthIs32Bytes(byte[] data) {
+        if (data.length == 32) {
+            return data;
+        } else if (data.length > 32) {
+            return Arrays.copyOfRange(data, data.length - 32, data.length);
+        } else {
+            byte[] newData = new byte[32];
+            System.arraycopy(data, 0, newData, 32 - data.length, data.length);
+            return newData;
         }
     }
 
-    public static boolean verifySignature(String msgHash, BigInteger s, BigInteger r, byte v, byte[] pubKey) {
-        byte[] pk = TSSHelpers.recoverPublicKey(msgHash, s, r, v);
-        return java.util.Arrays.equals(pk, pubKey);
+    public static String byteArrayToHexString(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
     }
 
-    public static byte[] recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) {
-        Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
-        byte[] msgData = android.util.Base64.decode(msgHash, android.util.Base64.NO_WRAP);
-        return Secp256k1.RecoverPubBytesFromSignature(msgData, signature.toByteArray());
+    public static BigInteger getLagrangeCoefficient(BigInteger[] allIndexes, BigInteger myIndex) {
+        BigInteger target = new BigInteger("0");
+        return getLagrangeCoefficient(allIndexes, myIndex, target);
+    }
+
+    public static BigInteger getLagrangeCoefficient(BigInteger[] allIndexes, BigInteger myIndex, BigInteger target) {
+        BigInteger upper = new BigInteger("1");
+        BigInteger lower = new BigInteger("1");
+        for (BigInteger index : allIndexes) {
+            if (myIndex.compareTo(index) != 0) {
+                BigInteger tempUpper = target.subtract(index).mod(Secp256k1.CURVE.getN());
+                upper = upper.multiply(tempUpper).mod(Secp256k1.CURVE.getN());
+
+                BigInteger tempLower = myIndex.subtract(index).mod(Secp256k1.CURVE.getN());
+                lower = lower.multiply(tempLower).mod(Secp256k1.CURVE.getN());
+            }
+        }
+        BigInteger invLower = lower.modInverse(Secp256k1.CURVE.getN());
+        return upper.multiply(invLower).mod(Secp256k1.CURVE.getN());
     }
 
     public static String assembleFullSession(String verifier, String verifierId, String tssTag, String tssNonce, String sessionNonce) {
-        String fullSession = verifier + Delimiters.Delimiter1 +
+        return verifier + Delimiters.Delimiter1 +
                 verifierId + Delimiters.Delimiter2 +
                 tssTag + Delimiters.Delimiter3 +
                 tssNonce + Delimiters.Delimiter4 +
                 sessionNonce;
-
-        return fullSession;
-    }
-
-    public static Map<String, String> getServerCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
-        LinkedHashMap<String, String> serverCoeffs = new LinkedHashMap<>();
-        for (int i = 0; i < participatingServerDKGIndexes.length; i++) {
-            BigInteger participatingServerIndex = participatingServerDKGIndexes[i];
-            BigInteger coefficient = TSSHelpers.getDKLSCoefficient(
-                    false, List.of(participatingServerDKGIndexes), userTssIndex, participatingServerIndex
-            );
-
-            // Values should never contain leading zeros
-            String key = TSSHelpers.removeLeadingZeros(participatingServerIndex.toString(16));
-            String value = TSSHelpers.removeLeadingZeros(coefficient.toString(16));
-            serverCoeffs.put(key, value);
-        }
-
-        return serverCoeffs;
     }
 
     public static String addLeadingZerosForLength64(String str) {
@@ -294,26 +301,6 @@ public class TSSHelpers {
         }
     }
 
-    public static String getClientCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
-        BigInteger coeff;
-        try {
-            coeff = getDKLSCoefficient(true, List.of(participatingServerDKGIndexes), userTssIndex, null);
-            return serializeToHexString(coeff);
-        } catch (Exception e) {
-            throw new TSSClientError(e.getMessage());
-        }
-    }
-
-    public static BigInteger denormalizeShare(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex, BigInteger userTssShare) throws TSSClientError {
-        try {
-            BigInteger coeff = getDKLSCoefficient(true, List.of(participatingServerDKGIndexes), userTssIndex, null);
-            BigInteger denormalizeShare = coeff.multiply(userTssShare).mod(Secp256k1.CURVE.getN());
-            return denormalizeShare;
-        } catch (Exception e) {
-            throw new TSSClientError(e.getMessage());
-        }
-    }
-
     public static String serializeToHexString(BigInteger value) {
         byte[] bytes = value.toByteArray();
         StringBuilder hexString = new StringBuilder();
@@ -340,56 +327,6 @@ public class TSSHelpers {
         return new EndpointsData(endpoints, tssWSEndpoints, partyIndexes);
     }
 
-    public static ECPoint getTSSPubKey(Key dkgPubKey, Key userSharePubKey, BigInteger userTSSIndex) {
-        BigInteger serverLagrangeCoeff = getLagrangeCoeffs(new BigInteger[]{new BigInteger("1"), userTSSIndex}, new BigInteger("1"));
-        BigInteger userLagrangeCoeff = getLagrangeCoeffs(new BigInteger[]{new BigInteger("1"), userTSSIndex}, userTSSIndex);
-
-        ECPoint serverTerm = ecPoint(dkgPubKey.getX(), dkgPubKey.getY()).multiply(serverLagrangeCoeff);
-        ECPoint userTerm = ecPoint(userSharePubKey.getX(), userSharePubKey.getY()).multiply(userLagrangeCoeff);
-        return serverTerm.add(userTerm);
-    }
-
-     /*public static BigInteger getLagrangeCoeffs(BigInteger[] shares, BigInteger[] nodeIndex) {
-        if (shares.length != nodeIndex.length) {
-            return null;
-        }
-        BigInteger secret = new BigInteger("0");
-        for (int i = 0; i < shares.length; i++) {
-            BigInteger upper = new BigInteger("1");
-            BigInteger lower = new BigInteger("1");
-            for (int j = 0; j < shares.length; j++) {
-                if (i != j) {
-                    upper = upper.multiply(nodeIndex[j].negate());
-                    upper = upper.mod(secp256k1N);
-                    BigInteger temp = nodeIndex[i].subtract(nodeIndex[j]);
-                    temp = temp.mod(secp256k1N);
-                    lower = lower.multiply(temp).mod(secp256k1N);
-                }
-            }
-            BigInteger delta = upper.multiply(lower.modInverse(secp256k1N)).mod(secp256k1N);
-            delta = delta.multiply(shares[i]).mod(secp256k1N);
-            secret = secret.add(delta);
-        }
-        return secret.mod(secp256k1N);
-    }*/
-
-    public static BigInteger getLagrangeCoeffs(BigInteger[] allIndexes, BigInteger myIndex) {
-        BigInteger target = new BigInteger("0");
-        BigInteger upper = new BigInteger("1");
-        BigInteger lower = new BigInteger("1");
-        for (BigInteger index : allIndexes) {
-            if (myIndex.compareTo(index) != 0) {
-                BigInteger tempUpper = target.subtract(index).mod(Secp256k1.CURVE.getN());
-                upper = upper.multiply(tempUpper).mod(Secp256k1.CURVE.getN());
-
-                BigInteger tempLower = myIndex.subtract(index).mod(Secp256k1.CURVE.getN());
-                lower = lower.multiply(tempLower).mod(Secp256k1.CURVE.getN());
-            }
-        }
-        BigInteger invLower = lower.modInverse(Secp256k1.CURVE.getN());
-        return upper.multiply(invLower).mod(Secp256k1.CURVE.getN());
-    }
-
     public static String padLeft(String inputString, Character padChar, int length) {
         if (inputString.length() >= length) return inputString;
         StringBuilder sb = new StringBuilder();
@@ -400,66 +337,11 @@ public class TSSHelpers {
         return sb.toString();
     }
 
-    public static ECPoint ecPoint(String x, String y) {
-        return Secp256k1.CURVE.getCurve().createPoint(new BigInteger(padLeft(x, '0', 64), 16),
-                new BigInteger(padLeft(y, '0', 64), 16));
-    }
-
-    public static BigInteger getAdditiveCoeff(boolean isUser, BigInteger[] participatingServerIndexes, BigInteger userTSSIndex, BigInteger serverIndex) {
-        if (isUser) {
-            return getLagrangeCoeffs(new BigInteger[]{new BigInteger("1"), userTSSIndex}, userTSSIndex);
+    static String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
         }
-        BigInteger serverLagrangeCoeff = getLagrangeCoeffs(participatingServerIndexes, serverIndex);
-        BigInteger masterLagrangeCoeff = getLagrangeCoeffs(new BigInteger[]{new BigInteger("1"), userTSSIndex}, new BigInteger("1"));
-        BigInteger additiveLagrangeCoeff = serverLagrangeCoeff.multiply(masterLagrangeCoeff).mod(Secp256k1.CURVE.getN());
-        System.out.println("Additive Coeff: " + additiveLagrangeCoeff);
-        return additiveLagrangeCoeff;
-    }
-
-    public static BigInteger getDenormaliseCoeff(BigInteger party, List<BigInteger> parties) {
-        if (!parties.contains(party)) {
-            throw new IllegalArgumentException("party " + party + " not found in parties " + parties);
-        }
-
-        return getLagrangeCoeffs(parties.toArray(new BigInteger[0]), party).modInverse(Secp256k1.CURVE.getN());
-    }
-
-    public static BigInteger getDKLSCoeff(boolean isUser, List<BigInteger> participatingServerIndexes,
-                                          BigInteger userTSSIndex, BigInteger serverIndex) {
-        List<BigInteger> sortedServerIndexes = new ArrayList<>(participatingServerIndexes);
-        Collections.sort(sortedServerIndexes);
-
-        for (int i = 0; i < sortedServerIndexes.size(); i++) {
-            if (!Objects.equals(sortedServerIndexes.get(i), participatingServerIndexes.get(i))) {
-                throw new IllegalArgumentException("server indexes must be sorted");
-            }
-        }
-
-        List<BigInteger> parties = new ArrayList<>();
-
-        // total number of parties for DKLS = total number of servers + 1 (user is the last party)
-        // server party indexes
-        int serverPartyIndex = 0;
-        for (int i = 0; i < participatingServerIndexes.size(); i++) {
-            int currentPartyIndex = i + 1;
-            parties.add(BigInteger.valueOf(currentPartyIndex));
-            if (Objects.equals(participatingServerIndexes.get(i), serverIndex)) {
-                serverPartyIndex = currentPartyIndex;
-            }
-        }
-        BigInteger userPartyIndex = BigInteger.valueOf(parties.size() + 1);
-        parties.add(userPartyIndex); // user party index
-
-        BigInteger coeff;
-        if (isUser) {
-            BigInteger additiveCoeff = getAdditiveCoeff(true, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
-            BigInteger denormaliseCoeff = getDenormaliseCoeff(userPartyIndex, parties);
-            return denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
-        }
-
-        BigInteger additiveCoeff = getAdditiveCoeff(false, participatingServerIndexes.toArray(new BigInteger[0]), userTSSIndex, serverIndex);
-        BigInteger denormaliseCoeff = getDenormaliseCoeff(BigInteger.valueOf(serverPartyIndex), parties);
-        coeff = denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
-        return coeff;
+        return sb.toString();
     }
 }
