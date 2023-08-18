@@ -29,7 +29,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 
 public class Secp256k1 {
-    private static SecureRandom secureRandom = new SecureRandom();
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     // The parameters of the secp256k1 curve that Bitcoin uses.
     private static final X9ECParameters CURVE_PARAMS = CustomNamedCurves.getByName("secp256k1");
@@ -129,8 +129,7 @@ public class Secp256k1 {
         ECPublicKeyParameters publicKeyParams = new ECPublicKeyParameters(pubKey, CURVE);
 
         FixedPointCombMultiplier multiplier = new FixedPointCombMultiplier();
-        ECPoint result = multiplier.multiply(publicKeyParams.getQ(), privateKeyParams.getD());
-        return result;
+        return multiplier.multiply(publicKeyParams.getQ(), privateKeyParams.getD());
     }
 
     public static ECPoint combinePublicKeys(ECPoint[] keys) {

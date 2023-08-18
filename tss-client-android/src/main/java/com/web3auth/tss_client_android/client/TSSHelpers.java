@@ -1,4 +1,6 @@
 package com.web3auth.tss_client_android.client;
+import static com.web3auth.tss_client_android.client.util.ByteUtils.bytesToHex;
+
 import android.util.Base64;
 import com.web3auth.tss_client_android.client.util.Secp256k1;
 import org.bouncycastle.math.ec.ECCurve;
@@ -334,14 +336,6 @@ public class TSSHelpers {
             sb.append(padChar);
         }
         sb.append(inputString);
-        return sb.toString();
-    }
-
-    static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
         return sb.toString();
     }
 }

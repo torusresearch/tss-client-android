@@ -1,5 +1,6 @@
 package com.web3auth.tss_client_android;
 
+import static com.web3auth.tss_client_android.client.TSSHelpers.padLeft;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -98,14 +99,14 @@ public class TssHelpersTests {
     public void testFinalGetTSSPubkey() throws Exception {
         ByteBuffer dkgpubBuffer = ByteBuffer.allocate(1 + 32 + 32);
         dkgpubBuffer.put((byte) 0x04); // Uncompressed key prefix
-        dkgpubBuffer.put(hexStringToByteArray(TSSHelpers.padLeft("18db3574e4217154769ad9cd88900e7f1c198aa60a1379f3869ba8a7699e6b53", '0', 64)));
-        dkgpubBuffer.put(hexStringToByteArray(TSSHelpers.padLeft("d4f7d578667c38003f881f262e21655a38241401d9fc029c9a6fcbca8ac97713", '0', 64)));
+        dkgpubBuffer.put(hexStringToByteArray(padLeft("18db3574e4217154769ad9cd88900e7f1c198aa60a1379f3869ba8a7699e6b53", '0', 64)));
+        dkgpubBuffer.put(hexStringToByteArray(padLeft("d4f7d578667c38003f881f262e21655a38241401d9fc029c9a6fcbca8ac97713", '0', 64)));
         byte[] dkgpubBytes = dkgpubBuffer.array();
 
         ByteBuffer userpubBuffer = ByteBuffer.allocate(1 + 32 + 32);
         userpubBuffer.put((byte) 0x04); // Uncompressed key prefix
-        userpubBuffer.put(hexStringToByteArray(TSSHelpers.padLeft("b4259bffab844a5255ba0c8f278b7fd857c094460b9051c95f04b29f9792368c", '0', 64)));
-        userpubBuffer.put(hexStringToByteArray(TSSHelpers.padLeft("790eb133df835aa22fd087d5e33b26f2d2e046b6670ac7603500bc1227216247", '0', 64)));
+        userpubBuffer.put(hexStringToByteArray(padLeft("b4259bffab844a5255ba0c8f278b7fd857c094460b9051c95f04b29f9792368c", '0', 64)));
+        userpubBuffer.put(hexStringToByteArray(padLeft("790eb133df835aa22fd087d5e33b26f2d2e046b6670ac7603500bc1227216247", '0', 64)));
         byte[] userpubBytes = userpubBuffer.array();
 
         BigInteger userTssIndex = new BigInteger("2");

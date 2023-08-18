@@ -4,6 +4,7 @@ import androidx.core.util.Pair;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.google.gson.Gson;
+import com.web3auth.tss_client_android.client.Delimiters;
 import com.web3auth.tss_client_android.client.EndpointsData;
 import com.web3auth.tss_client_android.client.TSSClient;
 import com.web3auth.tss_client_android.client.TSSClientError;
@@ -25,9 +26,6 @@ import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -35,18 +33,13 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import jnr.ffi.annotations.In;
+
 @RunWith(AndroidJUnit4.class)
 public class TssClientTests {
 
     static {
         System.loadLibrary("dkls-native");
-    }
-
-    static class Delimiters {
-        public static final String Delimiter1 = "\u001c";
-        public static final String Delimiter2 = "\u0015";
-        public static final String Delimiter3 = "\u0016";
-        public static final String Delimiter4 = "\u0017";
     }
 
     private final List<String> privateKeys = new ArrayList<>();
@@ -114,8 +107,7 @@ public class TssClientTests {
         BigInteger upper = BigInteger.ONE;
         BigInteger lower = BigInteger.ONE;
 
-        for (int i = 0; i < parties.length; i++) {
-            BigInteger otherParty = parties[i];
+        for (BigInteger otherParty : parties) {
             BigInteger otherPartyIndex = otherParty.add(BigInteger.ONE);
             if (!(party.equals(otherParty))) {
                 BigInteger otherPartyIndexNeg = otherPartyIndex.negate();
@@ -126,13 +118,12 @@ public class TssClientTests {
         }
 
         BigInteger lowerInverse = lower.modInverse(Secp256k1.CURVE.getN());
-        BigInteger delta = upper.multiply(lowerInverse).mod(Secp256k1.CURVE.getN());
 
-        return delta;
+        return upper.multiply(lowerInverse).mod(Secp256k1.CURVE.getN());
     }
 
     public static void distributeShares(BigInteger privKey, List<Integer> parties, List<String> endpoints,
-                                        int localClientIndex, String current_session) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, InterruptedException {
+                                        int localClientIndex, String current_session) throws InterruptedException {
         List<BigInteger> additiveShares = new ArrayList<>();
         BigInteger shareSum = BigInteger.ZERO;
 
@@ -217,16 +208,18 @@ public class TssClientTests {
         }
 
         // Wait for all threads to finish
-        latch.await(30, TimeUnit.SECONDS);
+        if (!latch.await(30, TimeUnit.SECONDS)) {
+            throw new InterruptedException();
+        }
     }
 
-    private static Pair<BigInteger, BigInteger> setupMockShares(List<String> endpoints, List<Integer> parties, int localClientIndex, String session) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException, NoSuchProviderException, IOException, InterruptedException {
+    private static Pair<BigInteger, BigInteger> setupMockShares(List<String> endpoints, List<Integer> parties, int localClientIndex, String session) throws InterruptedException {
         byte[] pk = Secp256k1.GenerateECKey();
         BigInteger privKey = new BigInteger(1, pk);
         BigInteger publicKey = new BigInteger(Secp256k1.PublicFromPrivateKey(pk));
 
         distributeShares(privKey, parties, endpoints, localClientIndex, session);
-        return new Pair(privKey, publicKey);
+        return new Pair<>(privKey, publicKey);
     }
 
     private static EndpointsData generateEndpoints(int parties, int clientIndex) {
@@ -278,13 +271,13 @@ public class TssClientTests {
 
         LinkedHashMap<String, String> coeffs = new LinkedHashMap<>();
         int[] participatingServerDKGIndexes = {1, 2, 3};
-        for (int i = 0; i <= participatingServerDKGIndexes.length; i++) {
+        for (int participatingServerDKGIndex : participatingServerDKGIndexes) {
             BigInteger coeff = BigInteger.ONE; // Initialize to 1
             byte[] serializedCoeff = coeff.toByteArray(); // Serialize the BigInteger
             byte[] suffix = new byte[Math.min(32, serializedCoeff.length)];
             System.arraycopy(serializedCoeff, Math.max(0, serializedCoeff.length - 32), suffix, 0, suffix.length);
             String hexString = TSSHelpers.byteArrayToHexString(suffix);
-            coeffs.put(String.valueOf(i), hexString);
+            coeffs.put(String.valueOf(participatingServerDKGIndex), hexString);
         }
 
         TSSClient client;

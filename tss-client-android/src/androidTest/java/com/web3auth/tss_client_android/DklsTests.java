@@ -1,11 +1,8 @@
 package com.web3auth.tss_client_android;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import com.web3auth.tss_client_android.dkls.ChaChaRng;
 import com.web3auth.tss_client_android.dkls.Counterparties;
 import com.web3auth.tss_client_android.dkls.DKLSError;
@@ -13,15 +10,10 @@ import com.web3auth.tss_client_android.dkls.Precompute;
 import com.web3auth.tss_client_android.dkls.SignatureFragments;
 import com.web3auth.tss_client_android.dkls.ThresholdSigner;
 import com.web3auth.tss_client_android.dkls.Utilities;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import java.security.InvalidAlgorithmParameterException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 @RunWith(AndroidJUnit4.class)
 public class DklsTests {
@@ -42,7 +34,7 @@ public class DklsTests {
     @Test
     public void testRng() {
         try {
-            ChaChaRng rng = new ChaChaRng();
+            new ChaChaRng();
         } catch (DKLSError e) {
             fail("Exception occurred: " + e.getLocalizedMessage());
         }
@@ -120,7 +112,7 @@ public class DklsTests {
         String share = "jLot8K2VTTJARiS7XCOuyYGE+rwsfNFFCq6CCyCdqSw=";
         String publicKey = "+AHtxLzwIRuzGFj/PZlgPpupyzqBvCn63nXjrWd6B9djE4NZL5b/HaHW/fGTxlfCa871n+FrkUnQhnSd3+ND7A==";
         try {
-            ThresholdSigner signer = new ThresholdSigner(session, index, parties, threshold, share, publicKey);
+            new ThresholdSigner(session, index, parties, threshold, share, publicKey);
         } catch (DKLSError e) {
             fail("Exception occurred: " + e.getLocalizedMessage());
         }
