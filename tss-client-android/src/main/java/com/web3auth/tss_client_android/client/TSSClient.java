@@ -56,7 +56,6 @@ public class TSSClient {
      * @param tssSocketEndpoints Server endpoints for socket communication, contains nil at endpoints.index == index
      * @param share The share for the client, base64 encoded bytes
      * @param pubKey The public key, base64 encoded bytes
-     * @return `TSSClient`
      * @throws TSSClientError
      * @throws DKLSError
      */

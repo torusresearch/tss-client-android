@@ -168,7 +168,7 @@ public class TSSHelpers {
      * Calculates server coefficients based on the distributed key generation indexes and the user tss index
      * @param participatingServerDKGIndexes The array of indexes for the participating servers.
      * @param userTssIndex The current tss index for the user
-     * @return Map<String, String>
+     * @return Map of String: String
      * @throws TSSClientError
      */
     public static Map<String, String> getServerCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
