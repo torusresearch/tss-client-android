@@ -1,6 +1,9 @@
 package com.web3auth.tss_client_android.client;
+
 import android.util.Base64;
+
 import androidx.core.util.Pair;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -15,6 +18,7 @@ import com.web3auth.tss_client_android.dkls.Precompute;
 import com.web3auth.tss_client_android.dkls.SignatureFragments;
 import com.web3auth.tss_client_android.dkls.ThresholdSigner;
 import com.web3auth.tss_client_android.dkls.Utilities;
+
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.InputStreamReader;
@@ -30,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
 import io.socket.client.Socket;
 
 public class TSSClient {
@@ -42,6 +47,19 @@ public class TSSClient {
     private final int index;
     private final String pubKey;
 
+    /**
+     * Constructor
+     * @param session The session to be used
+     * @param index The party index of this client, indexing starts at zero, may not be greater than (parties.count-1)
+     * @param parties The indexes of all parties, including index
+     * @param endpoints Server endpoints for web requests, must be equal to parties.count, contains nil at endpoints.index == index
+     * @param tssSocketEndpoints Server endpoints for socket communication, contains nil at endpoints.index == index
+     * @param share The share for the client, base64 encoded bytes
+     * @param pubKey The public key, base64 encoded bytes
+     * @return `TSSClient`
+     * @throws TSSClientError
+     * @throws DKLSError
+     */
     public TSSClient(String session, int index, int[] parties, String[] endpoints,
                      String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError {
         if (parties.length != tssSocketEndpoints.length) {
@@ -70,6 +88,12 @@ public class TSSClient {
         signer = new ThresholdSigner(session, (int) this.index, parties.length, parties.length, share, pubKey);
     }
 
+    /**
+     * Returns the session ID from the session
+     * @param session The session.
+     * @return String
+     * @throws TSSClientError
+     */
     public static String sid(String session) throws TSSClientError {
         String[] sessionParts = session.split(Delimiters.Delimiter4);
         if (sessionParts.length >= 2) {
@@ -83,6 +107,14 @@ public class TSSClient {
         return signer.setup(rng, comm);
     }
 
+    /**
+     * Performs the DKLS protocol to calculate a precompute for this client, each other party also calculates their own precompute
+     * @param serverCoeffs The DKLS coefficients for the servers
+     * @param signatures The signatures for the servers
+     * @return `Precompute`
+     * @throws TSSClientError
+     * @throws DKLSError
+     */
     public Precompute precompute(Map<String, String> serverCoeffs, List<String> signatures) throws TSSClientError, DKLSError {
         boolean local_servers = System.getProperty("LOCAL_SERVERS") != null;
         EventQueue.shared().updateFocus(new Date());
@@ -170,6 +202,16 @@ public class TSSClient {
         }
     }
 
+    /**
+     * Retrieves the signature fragments for each server, calculates its own fragment with the precompute, then performs local signing and verification
+     * @param message The message or message hash.
+     * @param hashOnly Whether message is the hash of the message.
+     * @param originalMessage The original message the hash was taken from, required if message is a hash.
+     * @param precompute The previously calculated Precompute for this client
+     * @param signatures The signatures for the servers
+     * @return `(BigInteger, BigInteger, Byte)`
+     * @throws TSSClientError
+     */
     public Triple<BigInteger, BigInteger, Byte> sign(String message, boolean hashOnly, String originalMessage,
                                                      Precompute precompute, List<String> signatures) throws TSSClientError {
         try {
@@ -278,11 +320,20 @@ public class TSSClient {
         }
     }
 
-
+    /**
+     * @return returns a signature fragment for this signer
+     * @throws Exception
+     * @throws DKLSError
+     */
     private String signWithPrecompute(String message, boolean hashOnly, Precompute precompute) throws Exception, DKLSError {
         return Utilities.localSign(message, hashOnly, precompute);
     }
 
+    /**
+     * @return returns a full signature using fragments and precompute
+     * @throws Exception
+     * @throws DKLSError
+     */
     private String verifyWithPrecompute(String message, boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws Exception, DKLSError {
         return Utilities.localVerify(message, hashOnly, precompute, fragments, pubKey);
     }
@@ -291,6 +342,12 @@ public class TSSClient {
         return isReady(5000);
     }
 
+    /**
+     * Checks notifications to determine if all parties have finished calculating a precompute before signing can be attempted, throws if a failure notification exists from any party
+     * @param timeout The maximum number of seconds to wait, in seconds.
+     * @return boolean
+     * @throws TSSClientError
+     */
     public boolean isReady(Integer timeout) throws TSSClientError {
         Date now = new Date();
         int offset = timeout != null ? timeout : 5000;
@@ -324,6 +381,12 @@ public class TSSClient {
         return checkConnected(5000);
     }
 
+    /**
+     * Checks if socket connections have been established and are ready to be used, for all parties, before precompute can be attemped
+     * @param timeout The maximum number of seconds to wait, in seconds.
+     * @return Boolean
+     * @throws TSSClientError
+     */
     public boolean checkConnected(Integer timeout) throws TSSClientError {
         Date now = new Date();
         int offset = timeout != null ? timeout : 5000;
@@ -360,6 +423,11 @@ public class TSSClient {
         return result;
     }
 
+    /**
+     * Performs cleanup after signing, removing all messages, events and connections for this signer
+     * @param signatures The signatures for the servers
+     * @throws TSSClientError
+     */
     public void cleanup(String[] signatures) throws TSSClientError {
         MessageQueue.shared().removeMessages(this.session);
         EventQueue.shared().removeEvents(this.session);

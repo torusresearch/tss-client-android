@@ -1,12 +1,16 @@
 package com.web3auth.tss_client_android.client;
+
 import static com.web3auth.tss_client_android.client.util.ByteUtils.bytesToHex;
 
 import android.util.Base64;
+
 import com.web3auth.tss_client_android.client.util.Secp256k1;
+
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
 import org.web3j.crypto.Hash;
+
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -16,14 +20,26 @@ import java.util.List;
 import java.util.Map;
 
 public class TSSHelpers {
+    // singleton class
     private TSSHelpers() {
     }
 
+    /**
+     * Hashes a message using Hash.sha3
+     * @param message The message to be hashed.
+     * @return String
+     */
     public static String hashMessage(String message) {
         byte[] hashedData = Hash.sha3(message.getBytes(StandardCharsets.UTF_8));
         return android.util.Base64.encodeToString(hashedData, android.util.Base64.NO_WRAP);
     }
 
+    /**
+     * Converts a share to base64
+     * @param share The share to be converted.
+     * @return String
+     * @throws TSSClientError
+     */
     public static String base64Share(BigInteger share) throws TSSClientError {
         if (share.signum() == -1) {
             throw new TSSClientError("Share may not be negative");
@@ -39,17 +55,40 @@ public class TSSHelpers {
         return android.util.Base64.encodeToString(last32Bytes, Base64.NO_WRAP);
     }
 
+    /**
+     * Verifies the message hash and signature components using the pubKey
+     * @param msgHash The hash of the message.
+     * @param s S component of signature
+     * @param r R component of signature
+     * @param v Recovery parameter of signature
+     * @param pubKey The public key to be checked against, 65 byte representation
+     * @return
+     */
     public static boolean verifySignature(String msgHash, BigInteger s, BigInteger r, byte v, byte[] pubKey) {
         byte[] pk = TSSHelpers.recoverPublicKey(msgHash, s, r, v);
         return java.util.Arrays.equals(pk, pubKey);
     }
 
+    /**
+     * Recovers the public key from the message hash and the signature components
+     * @param msgHash The hash of the message.
+     * @param s S component of signature
+     * @param r R component of signature
+     * @param v Recovery parameter of signature
+     * @return byte array
+     */
     public static byte[] recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) {
         Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
         byte[] msgData = android.util.Base64.decode(msgHash, android.util.Base64.NO_WRAP);
         return Secp256k1.RecoverPubBytesFromSignature(msgData, signature.toByteArray());
     }
 
+    /**
+     * Converts a public key to base64.
+     * @param pubKey The public key, either 65 or 64 byte representation
+     * @return String
+     * @throws TSSClientError
+     */
     public static String base64PublicKey(byte[] pubKey) throws TSSClientError {
         if (pubKey.length == 65) {
             byte[] trimmedKey = new byte[pubKey.length - 1];
@@ -65,6 +104,13 @@ public class TSSHelpers {
         throw new TSSClientError("Invalid public key bytes");
     }
 
+    /**
+     * Converts a public key to hex
+     * @param pubKey The public key, either 65 or 64 byte representation
+     * @param return64Bytes whether to use the 65 or 64 byte representation when converting to hex
+     * @return String
+     * @throws TSSClientError
+     */
     public static String hexUncompressedPublicKey(byte[] pubKey, boolean return64Bytes) throws TSSClientError {
         if (pubKey.length == 65) {
             if (return64Bytes) {
@@ -95,17 +141,36 @@ public class TSSHelpers {
         throw new TSSClientError("Invalid public key bytes");
     }
 
+    /**
+     * Converts a base64 string to a url safe base64 string
+     * @param base64 The string to convert
+     * @return String
+     */
     public static String base64ToBase64url(String base64) {
         return base64.replace("+", "-")
                 .replace("/", "_")
                 .replace("=", "");
     }
 
+    /**
+     * Converts signature components to the hex representation
+     * @param s S component of signature
+     * @param r R component of signature
+     * @param v Recovery parameter of signature
+     * @return String
+     */
     public static String hexSignature(BigInteger s, BigInteger r, byte v) {
         Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
         return signature.toHex();
     }
 
+    /**
+     * Calculates server coefficients based on the distributed key generation indexes and the user tss index
+     * @param participatingServerDKGIndexes The array of indexes for the participating servers.
+     * @param userTssIndex The current tss index for the user
+     * @return Map<String, String>
+     * @throws TSSClientError
+     */
     public static Map<String, String> getServerCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
         LinkedHashMap<String, String> serverCoeffs = new LinkedHashMap<>();
         for (BigInteger participatingServerIndex : participatingServerDKGIndexes) {
@@ -122,6 +187,13 @@ public class TSSHelpers {
         return serverCoeffs;
     }
 
+    /**
+     * Calculates client(user) coefficients based on the distributed key generation indexes and the user tss index
+     * @param participatingServerDKGIndexes The array of indexes for the participating servers.
+     * @param userTssIndex The current tss index for the user
+     * @return String
+     * @throws TSSClientError
+     */
     public static String getClientCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
         BigInteger coeff;
         try {
@@ -132,6 +204,14 @@ public class TSSHelpers {
         }
     }
 
+    /**
+     * Calculates client(user) denormalise Share based on the distributed key generation indexes and the user tss index
+     * @param participatingServerDKGIndexes The array of indexes for the participating servers.
+     * @param userTssIndex The current tss index for the user
+     * @param userTssShare The current tss share for the user
+     * @return bigInteger
+     * @throws TSSClientError
+     */
     public static BigInteger denormalizeShare(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex, BigInteger userTssShare) throws TSSClientError {
         try {
             BigInteger coeff = getDKLSCoefficient(true, List.of(participatingServerDKGIndexes), userTssIndex, null);
@@ -141,6 +221,14 @@ public class TSSHelpers {
         }
     }
 
+    /**
+     * Calculates the public key that will be used for TSS signing.
+     * @param dkgPubKey The public key resulting from distributed key generation.
+     * @param userSharePubKey The public key for the current TSS share
+     * @param userTssIndex The current tss index for the user
+     * @return byte array
+     * @throws Exception
+     */
     public static byte[] getFinalTssPublicKey(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws Exception {
         BigInteger serverLagrangeCoefficient = TSSHelpers.getLagrangeCoefficient(new BigInteger[]{new BigInteger("1"), userTssIndex}, new BigInteger("1"));
         BigInteger userLagrangeCoefficient = TSSHelpers.getLagrangeCoefficient(new BigInteger[]{new BigInteger("1"), userTssIndex}, userTssIndex);
@@ -237,6 +325,11 @@ public class TSSHelpers {
         }
     }
 
+    /**
+     * Converts array of bytes into hexadecimal string
+     * @param bytes The bytes array to convert
+     * @return String
+     */
     public static String byteArrayToHexString(byte[] bytes) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bytes) {
@@ -266,6 +359,15 @@ public class TSSHelpers {
         return upper.multiply(invLower).mod(Secp256k1.CURVE.getN());
     }
 
+    /**
+     * Assembles the full session string from components for signing.
+     * @param verifier The name of the verifier.
+     * @param verifierId  The current verifier id.
+     * @param tssTag The current tss tag.
+     * @param tssNonce The current tss nonce.
+     * @param sessionNonce The current session nonce.
+     * @return String
+     */
     public static String assembleFullSession(String verifier, String verifierId, String tssTag, String tssNonce, String sessionNonce) {
         return verifier + Delimiters.Delimiter1 +
                 verifierId + Delimiters.Delimiter2 +
@@ -303,6 +405,11 @@ public class TSSHelpers {
         }
     }
 
+    /**
+     * Serializes the BigInteger values and then converts it to hexadecimal string.
+     * @param value The BigInteger value to convert
+     * @return
+     */
     public static String serializeToHexString(BigInteger value) {
         byte[] bytes = value.toByteArray();
         StringBuilder hexString = new StringBuilder();
@@ -312,6 +419,12 @@ public class TSSHelpers {
         return hexString.toString();
     }
 
+    /**
+     * Generates endpoints for client based on supplied inputs.
+     * @param parties The number of parties.
+     * @param clientIndex The index of the client in the number of parties.
+     * @return EndpointsData
+     */
     public static EndpointsData generateEndpoints(int parties, int clientIndex) {
         List<String> endpoints = new ArrayList<>();
         List<String> tssWSEndpoints = new ArrayList<>();
@@ -329,6 +442,13 @@ public class TSSHelpers {
         return new EndpointsData(endpoints, tssWSEndpoints, partyIndexes);
     }
 
+    /**
+     * Returns a char sequence with content of this char sequence padded at the beginning to the specified length with the specified character or space.
+     * @param inputString The string to be pad from left
+     * @param padChar The character to pad string with.
+     * @param length The desired string length.
+     * @return
+     */
     public static String padLeft(String inputString, Character padChar, int length) {
         if (inputString.length() >= length) return inputString;
         StringBuilder sb = new StringBuilder();
