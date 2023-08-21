@@ -56,8 +56,8 @@ public class TSSClient {
      * @param tssSocketEndpoints Server endpoints for socket communication, contains nil at endpoints.index == index
      * @param share The share for the client, base64 encoded bytes
      * @param pubKey The public key, base64 encoded bytes
-     * @throws TSSClientError
-     * @throws DKLSError
+     * @throws TSSClientError if parties and tss sockets length are not
+     * @throws DKLSError if DKLSComm initialization is not correct
      */
     public TSSClient(String session, int index, int[] parties, String[] endpoints,
                      String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError {
@@ -91,7 +91,7 @@ public class TSSClient {
      * Returns the session ID from the session
      * @param session The session.
      * @return String
-     * @throws TSSClientError
+     * @throws TSSClientError if session format is invalid
      */
     public static String sid(String session) throws TSSClientError {
         String[] sessionParts = session.split(Delimiters.Delimiter4);
@@ -111,10 +111,9 @@ public class TSSClient {
      * @param serverCoeffs The DKLS coefficients for the servers
      * @param signatures The signatures for the servers
      * @return `Precompute`
-     * @throws TSSClientError
-     * @throws DKLSError
+     * @throws TSSClientError if sockets are not connected
      */
-    public Precompute precompute(Map<String, String> serverCoeffs, List<String> signatures) throws TSSClientError, DKLSError {
+    public Precompute precompute(Map<String, String> serverCoeffs, List<String> signatures) throws TSSClientError {
         boolean local_servers = System.getProperty("LOCAL_SERVERS") != null;
         EventQueue.shared().updateFocus(new Date());
         for (int i = 0; i < parties; i++) {
@@ -209,7 +208,7 @@ public class TSSClient {
      * @param precompute The previously calculated Precompute for this client
      * @param signatures The signatures for the servers
      * @return `(BigInteger, BigInteger, Byte)`
-     * @throws TSSClientError
+     * @throws TSSClientError if tss client is not ready or precomputes are insufficient
      */
     public Triple<BigInteger, BigInteger, Byte> sign(String message, boolean hashOnly, String originalMessage,
                                                      Precompute precompute, List<String> signatures) throws TSSClientError {
@@ -321,8 +320,6 @@ public class TSSClient {
 
     /**
      * @return returns a signature fragment for this signer
-     * @throws Exception
-     * @throws DKLSError
      */
     private String signWithPrecompute(String message, boolean hashOnly, Precompute precompute) throws Exception, DKLSError {
         return Utilities.localSign(message, hashOnly, precompute);
@@ -330,8 +327,6 @@ public class TSSClient {
 
     /**
      * @return returns a full signature using fragments and precompute
-     * @throws Exception
-     * @throws DKLSError
      */
     private String verifyWithPrecompute(String message, boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws Exception, DKLSError {
         return Utilities.localVerify(message, hashOnly, precompute, fragments, pubKey);
@@ -345,7 +340,7 @@ public class TSSClient {
      * Checks notifications to determine if all parties have finished calculating a precompute before signing can be attempted, throws if a failure notification exists from any party
      * @param timeout The maximum number of seconds to wait, in seconds.
      * @return boolean
-     * @throws TSSClientError
+     * @throws TSSClientError if error occurred during precompute
      */
     public boolean isReady(Integer timeout) throws TSSClientError {
         Date now = new Date();
@@ -384,7 +379,7 @@ public class TSSClient {
      * Checks if socket connections have been established and are ready to be used, for all parties, before precompute can be attemped
      * @param timeout The maximum number of seconds to wait, in seconds.
      * @return Boolean
-     * @throws TSSClientError
+     * @throws TSSClientError if socket is not connected.
      */
     public boolean checkConnected(Integer timeout) throws TSSClientError {
         Date now = new Date();
@@ -425,7 +420,7 @@ public class TSSClient {
     /**
      * Performs cleanup after signing, removing all messages, events and connections for this signer
      * @param signatures The signatures for the servers
-     * @throws TSSClientError
+     * @throws TSSClientError if there is error in cleanup API
      */
     public void cleanup(String[] signatures) throws TSSClientError {
         MessageQueue.shared().removeMessages(this.session);
