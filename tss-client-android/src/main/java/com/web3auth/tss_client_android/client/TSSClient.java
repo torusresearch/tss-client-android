@@ -1,7 +1,5 @@
 package com.web3auth.tss_client_android.client;
 
-import android.util.Base64;
-
 import androidx.core.util.Pair;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -295,8 +293,8 @@ public class TSSClient {
             String signature = verifyWithPrecompute(message, hashOnly, precompute, sigFrags, pubKey);
 
             String precompute_r = precompute.getR();
-            byte[] decoded_r = android.util.Base64.decode(precompute_r, Base64.NO_WRAP);
-            byte[] decoded = android.util.Base64.decode(signature, Base64.NO_WRAP);
+            byte[] decoded_r = java.util.Base64.getDecoder().decode(precompute_r);
+            byte[] decoded = java.util.Base64.getDecoder().decode(signature);
             String sighex = ByteUtils.convertByteToHexadecimal(decoded);
             BigInteger r = new BigInteger(sighex.substring(0, 64), 16);
             BigInteger s = new BigInteger(sighex.substring(64), 16);

@@ -57,6 +57,12 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
 
+task javadoc(type: Javadoc) {
+    failOnError(false)
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
 project.afterEvaluate {
     publishing {
         publications {

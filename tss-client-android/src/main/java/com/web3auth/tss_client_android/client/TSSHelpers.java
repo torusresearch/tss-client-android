@@ -2,8 +2,6 @@ package com.web3auth.tss_client_android.client;
 
 import static com.web3auth.tss_client_android.client.util.ByteUtils.bytesToHex;
 
-import android.util.Base64;
-
 import com.web3auth.tss_client_android.client.util.Secp256k1;
 
 import org.bouncycastle.math.ec.ECCurve;
@@ -31,7 +29,7 @@ public class TSSHelpers {
      */
     public static String hashMessage(String message) {
         byte[] hashedData = Hash.sha3(message.getBytes(StandardCharsets.UTF_8));
-        return android.util.Base64.encodeToString(hashedData, android.util.Base64.NO_WRAP);
+        return java.util.Base64.getEncoder().encodeToString(hashedData);
     }
 
     /**
@@ -52,7 +50,7 @@ public class TSSHelpers {
         System.arraycopy(shareBytes, Math.max(0, shareBytes.length - 32), last32Bytes, 0, length);
 
         // Base64 encode the last 32 bytes
-        return android.util.Base64.encodeToString(last32Bytes, Base64.NO_WRAP);
+        return java.util.Base64.getEncoder().encodeToString(last32Bytes);
     }
 
     /**
@@ -79,7 +77,7 @@ public class TSSHelpers {
      */
     public static byte[] recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) {
         Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
-        byte[] msgData = android.util.Base64.decode(msgHash, android.util.Base64.NO_WRAP);
+        byte[] msgData = java.util.Base64.getDecoder().decode(msgHash);
         return Secp256k1.RecoverPubBytesFromSignature(msgData, signature.toByteArray());
     }
 
@@ -93,12 +91,11 @@ public class TSSHelpers {
         if (pubKey.length == 65) {
             byte[] trimmedKey = new byte[pubKey.length - 1];
             System.arraycopy(pubKey, 1, trimmedKey, 0, trimmedKey.length);
-            return android.util.Base64.encodeToString(trimmedKey, Base64.NO_WRAP);
+            return java.util.Base64.getEncoder().encodeToString(trimmedKey);
         }
 
         if (pubKey.length == 64) {
-            return android.util.Base64.encodeToString(pubKey, Base64.NO_WRAP);
-
+            return java.util.Base64.getEncoder().encodeToString(pubKey);
         }
 
         throw new TSSClientError("Invalid public key bytes");

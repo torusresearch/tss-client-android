@@ -1,5 +1,4 @@
 package com.web3auth.tss_client_android.client.util;
-import android.util.Base64;
 
 import org.bouncycastle.asn1.ASN1InputStream;
 import org.bouncycastle.asn1.ASN1Integer;
@@ -371,7 +370,7 @@ public class Secp256k1 {
             sigData[0] = v;
             System.arraycopy(ByteUtils.BigIntegerToBytes(this.r, 32), 0, sigData, 1, 32);
             System.arraycopy(ByteUtils.BigIntegerToBytes(this.s, 32), 0, sigData, 33, 32);
-            return android.util.Base64.encodeToString(sigData, Base64.NO_WRAP);
+            return java.util.Base64.getEncoder().encodeToString(sigData);
         }
 
         public byte[] toByteArray() {
