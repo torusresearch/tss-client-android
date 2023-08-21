@@ -1,0 +1,8 @@
+
+tss-client-android/build/
+App/build
+.gradle
+.DS_Store
+tss-client-android/.cxx
+local.properties
+.idea
