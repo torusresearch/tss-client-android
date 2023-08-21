@@ -61,10 +61,6 @@ task javadoc(type: Javadoc) {
     failOnError(false)
     source = android.sourceSets.main.java.srcDirs
     classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-    exclude '*R.java'
-    exclude {
-        it.file.path.contains('tss_client_android_example')
-    }
 }
 
 afterEvaluate {
