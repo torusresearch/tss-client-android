@@ -33,8 +33,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jnr.ffi.annotations.In;
-
 @RunWith(AndroidJUnit4.class)
 public class TssClientTests {
 
