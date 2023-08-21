@@ -319,14 +319,14 @@ public class TSSClient {
     /**
      * @return returns a signature fragment for this signer
      */
-    private String signWithPrecompute(String message, boolean hashOnly, Precompute precompute) throws Exception, DKLSError {
+    private String signWithPrecompute(String message, boolean hashOnly, Precompute precompute) throws DKLSError {
         return Utilities.localSign(message, hashOnly, precompute);
     }
 
     /**
      * @return returns a full signature using fragments and precompute
      */
-    private String verifyWithPrecompute(String message, boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws Exception, DKLSError {
+    private String verifyWithPrecompute(String message, boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws DKLSError {
         return Utilities.localVerify(message, hashOnly, precompute, fragments, pubKey);
     }
 
@@ -377,7 +377,7 @@ public class TSSClient {
      * Checks if socket connections have been established and are ready to be used, for all parties, before precompute can be attemped
      * @param timeout The maximum number of seconds to wait, in seconds.
      * @return Boolean
-     * @throws TSSClientError if socket is not connected.
+     * @throws TSSClientError if it fails the timeout.
      */
     public boolean checkConnected(Integer timeout) throws TSSClientError {
         Date now = new Date();
