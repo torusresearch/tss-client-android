@@ -44,7 +44,7 @@ public class TssHelpersTests {
     }
 
     @Test
-    public void testGetDenormalizedCoefficient() {
+    public void testGetDenormalizedCoefficient() throws TSSClientError {
         BigInteger party = new BigInteger("100");
         BigInteger[] parties = {new BigInteger("100"), new BigInteger("200")};
         BigInteger result = TSSHelpers.getDenormalizedCoefficient(party, List.of(parties));
