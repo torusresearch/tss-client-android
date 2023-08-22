@@ -1,8 +1,10 @@
 package com.web3auth.tss_client_android.client;
-import com.web3auth.tss_client_android.BuildConfig;
+
 import org.json.JSONObject;
+
 import java.net.URI;
 import java.util.Date;
+
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -19,7 +21,8 @@ public class TSSSocket {
 
         try {
             IO.Options options;
-            if (BuildConfig.DEBUG) {
+            boolean local_servers = System.getProperty("LOCAL_SERVERS") != null;
+            if (local_servers) {
                 options = IO.Options.builder()
                         .setQuery(session.split(Delimiters.Delimiter4)[1])
                         .setTransports(new String[]{WebSocket.NAME})

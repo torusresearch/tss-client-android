@@ -8,9 +8,8 @@ android {
     compileSdk 33
 
     defaultConfig {
-        minSdk 26
+        minSdk 24
         targetSdk 33
-
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
         externalNativeBuild {
@@ -57,7 +56,21 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 }
 
-project.afterEvaluate {
+task javadoc(type: Javadoc) {
+    failOnError(false)
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    exclude '*R.java'
+    exclude {
+        it.file.path.contains('tss_client_android_example')
+    }
+}
+
+afterEvaluate {
+    javadoc.classpath += files(android.libraryVariants.collect { variant ->
+        variant.javaCompileProvider.get().classpath.files
+    })
+
     publishing {
         publications {
             release(MavenPublication) {

@@ -49,18 +49,18 @@ public class TSSClient {
 
     /**
      * Constructor
-     * @param session The session to be used
-     * @param index The party index of this client, indexing starts at zero, may not be greater than (parties.count-1)
-     * @param parties The indexes of all parties, including index
-     * @param endpoints Server endpoints for web requests, must be equal to parties.count, contains nil at endpoints.index == index
+     *
+     * @param session            The session to be used
+     * @param index              The party index of this client, indexing starts at zero, may not be greater than (parties.count-1)
+     * @param parties            The total count of all parties
+     * @param endpoints          Server endpoints for web requests, must be equal to parties.count, contains nil at endpoints.index == index
      * @param tssSocketEndpoints Server endpoints for socket communication, contains nil at endpoints.index == index
-     * @param share The share for the client, base64 encoded bytes
-     * @param pubKey The public key, base64 encoded bytes
-     * @throws TSSClientError
-     * @throws DKLSError
+     * @param share              The share for the client, base64 encoded bytes
+     * @param pubKey             The public key, base64 encoded bytes
+     * @throws TSSClientError Parties and tss sockets length are not equal, data provided in parameters is not correct, or not of the correct format.
      */
     public TSSClient(String session, int index, int[] parties, String[] endpoints,
-                     String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError, DKLSError {
+                     String[] tssSocketEndpoints, String share, String pubKey) throws TSSClientError {
         if (parties.length != tssSocketEndpoints.length) {
             throw new TSSClientError("Parties and socket length must be equal");
         }
@@ -80,18 +80,23 @@ public class TSSClient {
             }
         }
 
-        comm = new DKLSComm(session, (int) this.index, parties.length);
+        try {
+            comm = new DKLSComm(session, (int) this.index, parties.length);
 
-        rng = new ChaChaRng();
+            rng = new ChaChaRng();
 
-        signer = new ThresholdSigner(session, (int) this.index, parties.length, parties.length, share, pubKey);
+            signer = new ThresholdSigner(session, (int) this.index, parties.length, parties.length, share, pubKey);
+        } catch (DKLSError error) {
+            throw new TSSClientError(error.getMessage());
+        }
     }
 
     /**
      * Returns the session ID from the session
+     *
      * @param session The session.
      * @return String
-     * @throws TSSClientError
+     * @throws TSSClientError Session format is invalid
      */
     public static String sid(String session) throws TSSClientError {
         String[] sessionParts = session.split(Delimiters.Delimiter4);
@@ -108,13 +113,14 @@ public class TSSClient {
 
     /**
      * Performs the DKLS protocol to calculate a precompute for this client, each other party also calculates their own precompute
-     * @param serverCoeffs The DKLS coefficients for the servers
-     * @param signatures The signatures for the servers
-     * @return `Precompute`
-     * @throws TSSClientError
-     * @throws DKLSError
+     *
+     * @param serverCoeffs The coefficients for the servers, ordered according to endpoint index
+     * @param signatures   The signatures for the servers, ordered according to endpoint index
+     * @return Precompute
+     * @throws TSSClientError Sockets are not connected, one or more servers returns invalid response, one or more parties fail in precompute calculation.
+     * @see Precompute
      */
-    public Precompute precompute(Map<String, String> serverCoeffs, List<String> signatures) throws TSSClientError, DKLSError {
+    public Precompute precompute(Map<String, String> serverCoeffs, List<String> signatures) throws TSSClientError {
         boolean local_servers = System.getProperty("LOCAL_SERVERS") != null;
         EventQueue.shared().updateFocus(new Date());
         for (int i = 0; i < parties; i++) {
@@ -203,13 +209,15 @@ public class TSSClient {
 
     /**
      * Retrieves the signature fragments for each server, calculates its own fragment with the precompute, then performs local signing and verification
-     * @param message The message or message hash.
-     * @param hashOnly Whether message is the hash of the message.
-     * @param originalMessage The original message the hash was taken from, required if message is a hash.
-     * @param precompute The previously calculated Precompute for this client
-     * @param signatures The signatures for the servers
-     * @return `(BigInteger, BigInteger, Byte)`
-     * @throws TSSClientError
+     *
+     * @param message         The message or message hash.
+     * @param hashOnly        Whether message is the hash of the message.
+     * @param originalMessage The original message the hash was taken from, if not nil will be compared against message hash.
+     * @param precompute      The previously calculated Precompute for this client
+     * @param signatures      The signatures for the servers
+     * @return (BigInteger, BigInteger, Byte)
+     * @throws TSSClientError Not all servers have finished with their precompute calculation. Client has already signed a message. Message and its' hash do not match or original message is not provided. Servers provided invalid response or are unreachable. Signature verification failed.
+     * @see Triple
      */
     public Triple<BigInteger, BigInteger, Byte> sign(String message, boolean hashOnly, String originalMessage,
                                                      Precompute precompute, List<String> signatures) throws TSSClientError {
@@ -305,11 +313,11 @@ public class TSSClient {
 
             // boolean _sLessThanHalf = true;
             // if (_sLessThanHalf) {
-                BigInteger halfOfSecp256k1n = Secp256k1.HALF_CURVE_ORDER;
-                if (s.compareTo(halfOfSecp256k1n) > 0) {
-                    s = Secp256k1.CURVE.getN().subtract(s);
-                    recoveryParam = (byte) ((recoveryParam + 1) % 2);
-                }
+            BigInteger halfOfSecp256k1n = Secp256k1.HALF_CURVE_ORDER;
+            if (s.compareTo(halfOfSecp256k1n) > 0) {
+                s = Secp256k1.CURVE.getN().subtract(s);
+                recoveryParam = (byte) ((recoveryParam + 1) % 2);
+            }
             // }
 
             consumed = true;
@@ -320,32 +328,55 @@ public class TSSClient {
     }
 
     /**
-     * @return returns a signature fragment for this signer
-     * @throws Exception
-     * @throws DKLSError
+     * Locally signs a message, returning a signature fragment.
+     *
+     * @param message    The message or message hash to sign
+     * @param hashOnly   If the message is just the hash
+     * @param precompute The calculated precompute.
+     * @return `String`
+     * @throws TSSClientError Incorrect parameters provided.
+     * @see Precompute
      */
-    private String signWithPrecompute(String message, boolean hashOnly, Precompute precompute) throws Exception, DKLSError {
-        return Utilities.localSign(message, hashOnly, precompute);
+    private String signWithPrecompute(String message, boolean hashOnly, Precompute precompute) throws TSSClientError {
+        try {
+            return Utilities.localSign(message, hashOnly, precompute);
+        } catch (DKLSError error) {
+            throw new TSSClientError(error.getMessage());
+        }
     }
 
     /**
-     * @return returns a full signature using fragments and precompute
-     * @throws Exception
-     * @throws DKLSError
+     * Verifies a locally signed message, returning the full signature
+     *
+     * @param message    The message of message hash.
+     * @param hashOnly   If the message is just a hash.
+     * @param precompute The calculated precompute.
+     * @param fragments  The signature fragments.
+     * @param pubKey     The public key used to sign the message.
+     * @return `String`
+     * @see SignatureFragments
+     * @see Precompute
      */
-    private String verifyWithPrecompute(String message, boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws Exception, DKLSError {
+    private String verifyWithPrecompute(String message, boolean hashOnly, Precompute precompute, SignatureFragments fragments, String pubKey) throws DKLSError {
         return Utilities.localVerify(message, hashOnly, precompute, fragments, pubKey);
     }
 
+    /**
+     * Checks notifications to determine if all parties have finished calculating a precompute before signing can be attempted
+     *
+     * @return boolean
+     * @throws TSSClientError If a failure notification exists for any party or exceeds the timeout (5 seconds)
+     */
     public boolean isReady() throws TSSClientError {
         return isReady(5000);
     }
 
     /**
-     * Checks notifications to determine if all parties have finished calculating a precompute before signing can be attempted, throws if a failure notification exists from any party
+     * Checks notifications to determine if all parties have finished calculating a precompute before signing can be attempted
+     *
      * @param timeout The maximum number of seconds to wait, in seconds.
      * @return boolean
-     * @throws TSSClientError
+     * @throws TSSClientError If a failure notification exists for any party or exceeds the timeout
      */
     public boolean isReady(Integer timeout) throws TSSClientError {
         Date now = new Date();
@@ -376,15 +407,22 @@ public class TSSClient {
         return result;
     }
 
+    /**
+     * Checks if socket connections have been established and are ready to be used, for all parties, before precompute can be attempted
+     *
+     * @return boolean
+     * @throws TSSClientError If the timeout is exceeded (5 seconds)
+     */
     public boolean checkConnected() throws TSSClientError {
         return checkConnected(5000);
     }
 
     /**
-     * Checks if socket connections have been established and are ready to be used, for all parties, before precompute can be attemped
+     * Checks if socket connections have been established and are ready to be used, for all parties, before precompute can be attempted
+     *
      * @param timeout The maximum number of seconds to wait, in seconds.
-     * @return Boolean
-     * @throws TSSClientError
+     * @return boolean
+     * @throws TSSClientError If the timeout is exceeded
      */
     public boolean checkConnected(Integer timeout) throws TSSClientError {
         Date now = new Date();
@@ -414,7 +452,7 @@ public class TSSClient {
                 }
             }
 
-            if (connections == parties -1) {
+            if (connections == parties - 1) {
                 result = true;
                 break;
             }
@@ -424,8 +462,9 @@ public class TSSClient {
 
     /**
      * Performs cleanup after signing, removing all messages, events and connections for this signer
+     *
      * @param signatures The signatures for the servers
-     * @throws TSSClientError
+     * @throws TSSClientError If a server fails or is unreachable.
      */
     public void cleanup(String[] signatures) throws TSSClientError {
         MessageQueue.shared().removeMessages(this.session);

@@ -25,20 +25,22 @@ public class TSSHelpers {
     }
 
     /**
-     * Hashes a message using Hash.sha3
+     * Hashes a message using Keccak
+     *
      * @param message The message to be hashed.
      * @return String
      */
     public static String hashMessage(String message) {
         byte[] hashedData = Hash.sha3(message.getBytes(StandardCharsets.UTF_8));
-        return android.util.Base64.encodeToString(hashedData, android.util.Base64.NO_WRAP);
+        return android.util.Base64.encodeToString(hashedData, Base64.NO_WRAP);
     }
 
     /**
      * Converts a share to base64
+     *
      * @param share The share to be converted.
      * @return String
-     * @throws TSSClientError
+     * @throws TSSClientError if share is negative
      */
     public static String base64Share(BigInteger share) throws TSSClientError {
         if (share.signum() == -1) {
@@ -57,12 +59,13 @@ public class TSSHelpers {
 
     /**
      * Verifies the message hash and signature components using the pubKey
+     *
      * @param msgHash The hash of the message.
-     * @param s S component of signature
-     * @param r R component of signature
-     * @param v Recovery parameter of signature
-     * @param pubKey The public key to be checked against, 65 byte representation
-     * @return
+     * @param s       S component of signature
+     * @param r       R component of signature
+     * @param v       Recovery parameter of signature
+     * @param pubKey  The public key to be checked against, 65 byte representation
+     * @return boolean
      */
     public static boolean verifySignature(String msgHash, BigInteger s, BigInteger r, byte v, byte[] pubKey) {
         byte[] pk = TSSHelpers.recoverPublicKey(msgHash, s, r, v);
@@ -71,23 +74,25 @@ public class TSSHelpers {
 
     /**
      * Recovers the public key from the message hash and the signature components
+     *
      * @param msgHash The hash of the message.
-     * @param s S component of signature
-     * @param r R component of signature
-     * @param v Recovery parameter of signature
-     * @return byte array
+     * @param s       S component of signature
+     * @param r       R component of signature
+     * @param v       Recovery parameter of signature
+     * @return byte[]
      */
     public static byte[] recoverPublicKey(String msgHash, BigInteger s, BigInteger r, byte v) {
         Secp256k1.ECDSASignature signature = Secp256k1.ECDSASignature.fromComponents(r.toByteArray(), s.toByteArray(), v);
-        byte[] msgData = android.util.Base64.decode(msgHash, android.util.Base64.NO_WRAP);
+        byte[] msgData = android.util.Base64.decode(msgHash, Base64.NO_WRAP);
         return Secp256k1.RecoverPubBytesFromSignature(msgData, signature.toByteArray());
     }
 
     /**
      * Converts a public key to base64.
+     *
      * @param pubKey The public key, either 65 or 64 byte representation
      * @return String
-     * @throws TSSClientError
+     * @throws TSSClientError if public key bytes are invalid
      */
     public static String base64PublicKey(byte[] pubKey) throws TSSClientError {
         if (pubKey.length == 65) {
@@ -98,7 +103,6 @@ public class TSSHelpers {
 
         if (pubKey.length == 64) {
             return android.util.Base64.encodeToString(pubKey, Base64.NO_WRAP);
-
         }
 
         throw new TSSClientError("Invalid public key bytes");
@@ -106,10 +110,11 @@ public class TSSHelpers {
 
     /**
      * Converts a public key to hex
-     * @param pubKey The public key, either 65 or 64 byte representation
+     *
+     * @param pubKey        The public key, either 65 or 64 byte representation
      * @param return64Bytes whether to use the 65 or 64 byte representation when converting to hex
      * @return String
-     * @throws TSSClientError
+     * @throws TSSClientError if public key bytes are invalid
      */
     public static String hexUncompressedPublicKey(byte[] pubKey, boolean return64Bytes) throws TSSClientError {
         if (pubKey.length == 65) {
@@ -143,6 +148,7 @@ public class TSSHelpers {
 
     /**
      * Converts a base64 string to a url safe base64 string
+     *
      * @param base64 The string to convert
      * @return String
      */
@@ -154,6 +160,7 @@ public class TSSHelpers {
 
     /**
      * Converts signature components to the hex representation
+     *
      * @param s S component of signature
      * @param r R component of signature
      * @param v Recovery parameter of signature
@@ -166,10 +173,11 @@ public class TSSHelpers {
 
     /**
      * Calculates server coefficients based on the distributed key generation indexes and the user tss index
+     *
      * @param participatingServerDKGIndexes The array of indexes for the participating servers.
-     * @param userTssIndex The current tss index for the user
-     * @return Map of String: String
-     * @throws TSSClientError
+     * @param userTssIndex                  The current tss index for the user
+     * @return Map
+     * @throws TSSClientError if participatingServerDKGIndexes indexes are not sorted
      */
     public static Map<String, String> getServerCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
         LinkedHashMap<String, String> serverCoeffs = new LinkedHashMap<>();
@@ -189,10 +197,11 @@ public class TSSHelpers {
 
     /**
      * Calculates client(user) coefficients based on the distributed key generation indexes and the user tss index
+     *
      * @param participatingServerDKGIndexes The array of indexes for the participating servers.
-     * @param userTssIndex The current tss index for the user
+     * @param userTssIndex                  The current tss index for the user
      * @return String
-     * @throws TSSClientError
+     * @throws TSSClientError if participatingServerDKGIndexes indexes are not sorted
      */
     public static String getClientCoefficients(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex) throws TSSClientError {
         BigInteger coeff;
@@ -205,12 +214,13 @@ public class TSSHelpers {
     }
 
     /**
-     * Calculates client(user) denormalise Share based on the distributed key generation indexes and the user tss index
+     * Calculates the client(user) denormalised share based on the distributed key generation indexes and the user tss index
+     *
      * @param participatingServerDKGIndexes The array of indexes for the participating servers.
-     * @param userTssIndex The current tss index for the user
-     * @param userTssShare The current tss share for the user
-     * @return bigInteger
-     * @throws TSSClientError
+     * @param userTssIndex                  The current tss index for the user
+     * @param userTssShare                  The current tss share for the user
+     * @return BigInteger
+     * @throws TSSClientError if participatingServerDKGIndexes indexes are not sorted
      */
     public static BigInteger denormalizeShare(BigInteger[] participatingServerDKGIndexes, BigInteger userTssIndex, BigInteger userTssShare) throws TSSClientError {
         try {
@@ -223,13 +233,14 @@ public class TSSHelpers {
 
     /**
      * Calculates the public key that will be used for TSS signing.
-     * @param dkgPubKey The public key resulting from distributed key generation.
+     *
+     * @param dkgPubKey       The public key resulting from distributed key generation.
      * @param userSharePubKey The public key for the current TSS share
-     * @param userTssIndex The current tss index for the user
-     * @return byte array
-     * @throws Exception
+     * @param userTssIndex    The current tss index for the user
+     * @return byte[]
+     * @throws TSSClientError if dkgPublicKey or userSharePubKey is invalid
      */
-    public static byte[] getFinalTssPublicKey(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws Exception {
+    public static byte[] getFinalTssPublicKey(byte[] dkgPubKey, byte[] userSharePubKey, BigInteger userTssIndex) throws TSSClientError {
         BigInteger serverLagrangeCoefficient = TSSHelpers.getLagrangeCoefficient(new BigInteger[]{new BigInteger("1"), userTssIndex}, new BigInteger("1"));
         BigInteger userLagrangeCoefficient = TSSHelpers.getLagrangeCoefficient(new BigInteger[]{new BigInteger("1"), userTssIndex}, userTssIndex);
 
@@ -257,6 +268,16 @@ public class TSSHelpers {
         return combined.getEncoded(false);
     }
 
+    /**
+     * Calculates the additive coefficient.
+     *
+     * @param isUser                     if this calculation is for the users share
+     * @param participatingServerIndexes The server indexes that will be participating
+     * @param userTSSIndex               The client tss index
+     * @param serverIndex                The server index
+     * @return BigInteger
+     * @throws TSSClientError If isUser is false can serverIndex is nil
+     */
     public static BigInteger getAdditiveCoefficient(boolean isUser, BigInteger[] participatingServerIndexes, BigInteger userTSSIndex, BigInteger serverIndex) throws TSSClientError {
         if (isUser) {
             return getLagrangeCoefficient(new BigInteger[]{new BigInteger("1"), userTSSIndex}, userTSSIndex);
@@ -270,14 +291,33 @@ public class TSSHelpers {
         }
     }
 
-    public static BigInteger getDenormalizedCoefficient(BigInteger party, List<BigInteger> parties) {
+
+    /**
+     * Calculates the denormalized coefficient.
+     *
+     * @param party   The party
+     * @param parties The list of party
+     * @return BigInteger
+     * @throws TSSClientError If the party does not exist in parties
+     */
+    public static BigInteger getDenormalizedCoefficient(BigInteger party, List<BigInteger> parties) throws TSSClientError {
         if (!parties.contains(party)) {
-            throw new IllegalArgumentException("party " + party + " not found in parties " + parties);
+            throw new TSSClientError("party " + party + " not found in parties " + parties);
         }
 
         return getLagrangeCoefficient(parties.toArray(new BigInteger[0]), party).modInverse(Secp256k1.CURVE.getN());
     }
 
+    /**
+     * Calculates the DKLS coefficient.
+     *
+     * @param isUser                     if this calculation is for the users share
+     * @param participatingServerIndexes The server indexes that will be participating
+     * @param userTssIndex               The client tss index
+     * @param serverIndex                The server index
+     * @return BigInteger
+     * @throws TSSClientError If participatingServerIndexes are not sorted
+     */
     public static BigInteger getDKLSCoefficient(boolean isUser, List<BigInteger> participatingServerIndexes, BigInteger userTssIndex, BigInteger serverIndex) throws TSSClientError {
         List<BigInteger> sortedServerIndexes = new ArrayList<>(participatingServerIndexes);
         Collections.sort(sortedServerIndexes);
@@ -313,6 +353,11 @@ public class TSSHelpers {
         return denormaliseCoeff.multiply(additiveCoeff).mod(Secp256k1.CURVE.getN());
     }
 
+    /**
+     * Returns 32 bytes for provided data, copying from the start, padding if necessary.
+     *
+     * @return byte[]
+     */
     private static byte[] ensureDataLengthIs32Bytes(byte[] data) {
         if (data.length == 32) {
             return data;
@@ -327,6 +372,7 @@ public class TSSHelpers {
 
     /**
      * Converts array of bytes into hexadecimal string
+     *
      * @param bytes The bytes array to convert
      * @return String
      */
@@ -338,6 +384,13 @@ public class TSSHelpers {
         return sb.toString();
     }
 
+    /**
+     * Calculates the DKLS coefficient.
+     *
+     * @param allIndexes All indexes used for the calculation
+     * @param myIndex    Current index for the calculation
+     * @return BigInteger
+     */
     public static BigInteger getLagrangeCoefficient(BigInteger[] allIndexes, BigInteger myIndex) {
         BigInteger target = new BigInteger("0");
         return getLagrangeCoefficient(allIndexes, myIndex, target);
@@ -360,11 +413,12 @@ public class TSSHelpers {
     }
 
     /**
-     * Assembles the full session string from components for signing.
-     * @param verifier The name of the verifier.
-     * @param verifierId  The current verifier id.
-     * @param tssTag The current tss tag.
-     * @param tssNonce The current tss nonce.
+     * Assembles the full delimited session string from components for signing.
+     *
+     * @param verifier     The name of the verifier.
+     * @param verifierId   The current verifier id.
+     * @param tssTag       The current tss tag.
+     * @param tssNonce     The current tss nonce.
      * @param sessionNonce The current session nonce.
      * @return String
      */
@@ -376,6 +430,12 @@ public class TSSHelpers {
                 sessionNonce;
     }
 
+    /**
+     * Pads string with zeros until length of 64 is reached.
+     *
+     * @param str String to pad.
+     * @return String
+     */
     public static String addLeadingZerosForLength64(String str) {
         if (str.length() < 64) {
             String toAdd = "0".repeat(64 - str.length());
@@ -385,6 +445,12 @@ public class TSSHelpers {
         }
     }
 
+    /**
+     * Rempves leading zeroes from a string.
+     *
+     * @param str String to pad.
+     * @return String
+     */
     public static String removeLeadingZeros(String str) {
         int found = -1;
         for (int i = 0; i < str.length(); i++) {
@@ -407,8 +473,9 @@ public class TSSHelpers {
 
     /**
      * Serializes the BigInteger values and then converts it to hexadecimal string.
+     *
      * @param value The BigInteger value to convert
-     * @return
+     * @return String
      */
     public static String serializeToHexString(BigInteger value) {
         byte[] bytes = value.toByteArray();
@@ -421,7 +488,8 @@ public class TSSHelpers {
 
     /**
      * Generates endpoints for client based on supplied inputs.
-     * @param parties The number of parties.
+     *
+     * @param parties     The number of parties.
      * @param clientIndex The index of the client in the number of parties.
      * @return EndpointsData
      */
@@ -444,10 +512,11 @@ public class TSSHelpers {
 
     /**
      * Returns a char sequence with content of this char sequence padded at the beginning to the specified length with the specified character or space.
+     *
      * @param inputString The string to be pad from left
-     * @param padChar The character to pad string with.
-     * @param length The desired string length.
-     * @return
+     * @param padChar     The character to pad string with.
+     * @param length      The desired string length.
+     * @return String
      */
     public static String padLeft(String inputString, Character padChar, int length) {
         if (inputString.length() >= length) return inputString;
