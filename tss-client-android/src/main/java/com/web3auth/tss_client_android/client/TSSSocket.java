@@ -7,7 +7,6 @@ import java.util.Date;
 
 import io.socket.client.IO;
 import io.socket.client.Socket;
-import io.socket.emitter.Emitter;
 import io.socket.engineio.client.transports.WebSocket;
 
 public class TSSSocket {
@@ -24,7 +23,7 @@ public class TSSSocket {
             boolean local_servers = System.getProperty("LOCAL_SERVERS") != null;
             if (local_servers) {
                 options = IO.Options.builder()
-                        .setQuery(session.split(Delimiters.Delimiter4)[1])
+                        .setQuery("sessionId="+session.split(Delimiters.Delimiter4)[1])
                         .setTransports(new String[]{WebSocket.NAME})
                         .setReconnectionDelayMax(10000)
                         .setReconnectionAttempts(3)
@@ -33,9 +32,8 @@ public class TSSSocket {
             } else {
                 options = IO.Options.builder()
                         .setPath("/tss/socket.io")
-                        .setQuery(session.split(Delimiters.Delimiter4)[1])
+                        .setQuery("sessionId="+session.split(Delimiters.Delimiter4)[1])
                         .setTransports(new String[]{WebSocket.NAME})
-                        .setSecure(true)
                         .setReconnectionDelayMax(10000)
                         .setReconnectionAttempts(3)
                         .setForceNew(true)
@@ -62,7 +60,7 @@ public class TSSSocket {
     }
 
     private void setupSocketEventHandlers() {
-        socket.on(Socket.EVENT_CONNECT_ERROR, (Emitter.Listener) args -> System.out.println("socket error, party: " + party));
+        socket.on(Socket.EVENT_CONNECT_ERROR, args -> System.out.println("socket error, party: " + party));
 
         socket.on(Socket.EVENT_CONNECT, args -> System.out.println("connected, party: " + party));
 
