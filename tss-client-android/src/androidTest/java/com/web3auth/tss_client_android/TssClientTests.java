@@ -242,7 +242,7 @@ public class TssClientTests {
     }
 
     @Test
-    public void testExample() throws Exception, DKLSError {
+    public void testExample() throws Exception {
         int parties = 4;
         String msg = "hello world";
         String msgHash = TSSHelpers.hashMessage(msg);

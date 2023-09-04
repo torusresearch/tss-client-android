@@ -2,7 +2,6 @@ package com.web3auth.tss_client_android;
 
 import static com.web3auth.tss_client_android.client.TSSHelpers.padLeft;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import com.web3auth.tss_client_android.client.TSSClientError;
 import com.web3auth.tss_client_android.client.TSSHelpers;
@@ -58,11 +57,11 @@ public class TssHelpersTests {
         BigInteger userTssIndex1 = new BigInteger("3");
         BigInteger dklsCoeff = TSSHelpers.getDKLSCoefficient(true, List.of(participatingServerIndexes1), userTssIndex1, null);
         BigInteger compare = new BigInteger("7fffffffffffffffffffffffffffffff5d576e7357a4501ddfe92f46681b20a1", 16);
-        assertTrue(dklsCoeff.equals(compare));
+        assertEquals(dklsCoeff, compare);
 
         BigInteger coeff2 = TSSHelpers.getDKLSCoefficient(false, List.of(new BigInteger[]{new BigInteger("1"), new BigInteger("2"), new BigInteger("5")}), new BigInteger("3"), new BigInteger("2"));
         BigInteger comp = new BigInteger("955555555555555555555555555555549790ab8690ea5d782fe561d2241fa611", 16);
-        assertTrue(coeff2.equals(comp));
+        assertEquals(coeff2, comp);
 
         BigInteger[] participatingServerIndexes = {new BigInteger("100"), new BigInteger("200")};
         BigInteger userTssIndex = new BigInteger("100");
