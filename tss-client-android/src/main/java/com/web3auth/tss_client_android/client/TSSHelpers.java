@@ -31,7 +31,18 @@ public class TSSHelpers {
      * @return String
      */
     public static String hashMessage(String message) {
-        byte[] hashedData = Hash.sha3(message.getBytes(StandardCharsets.UTF_8));
+        byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
+        return hashMessage(bytes);
+    }
+
+    /**
+     * Hashes message bytes using Keccak
+     *
+     * @param message The message bytes to be hashed.
+     * @return String
+     */
+    public static String hashMessage(byte[] message) {
+        byte[] hashedData = Hash.sha3(message);
         return android.util.Base64.encodeToString(hashedData, Base64.NO_WRAP);
     }
 
