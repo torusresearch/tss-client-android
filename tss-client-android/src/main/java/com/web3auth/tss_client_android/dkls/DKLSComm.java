@@ -21,6 +21,11 @@ public final class DKLSComm {
     private final long pointer;
 
     @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
+    final long read_callback_id = 0;
+    @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
+    final long send_callback_id = 0;
+
+    @SuppressWarnings("unused") // linter cannot detect that this is called from the JNI
     private String readMsg(String session, byte[] index_bytes, byte[] remote_bytes, String msgType) {
         if ("ga1_worker_support".equals(msgType)) {
             return "not supported";
