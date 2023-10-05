@@ -1,6 +1,3 @@
-//
-// Created by grvgo on 28-07-2023.
-//
 #include <jni.h>
 #include "include/dkls.h"
 #include <string>
