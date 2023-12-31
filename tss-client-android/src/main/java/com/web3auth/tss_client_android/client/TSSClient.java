@@ -309,14 +309,14 @@ public class TSSClient {
             String sighex = ByteUtils.convertByteToHexadecimal(decoded);
             BigInteger r = new BigInteger(sighex.substring(0, 64), 16);
             BigInteger s = new BigInteger(sighex.substring(64), 16);
-            int recoveryParam = ((int) decoded_r[decoded_r.length - 1]) % 2;
+            int recoveryParam = Math.floorMod(decoded_r[decoded_r.length - 1], 2);
 
             // boolean _sLessThanHalf = true;
             // if (_sLessThanHalf) {
             BigInteger halfOfSecp256k1n = Secp256k1.HALF_CURVE_ORDER;
             if (s.compareTo(halfOfSecp256k1n) > 0) {
                 s = Secp256k1.CURVE.getN().subtract(s);
-                recoveryParam = Math.abs((recoveryParam+1) % 2);
+                recoveryParam = Math.floorMod((recoveryParam+1),2);
             }
             // }
 
