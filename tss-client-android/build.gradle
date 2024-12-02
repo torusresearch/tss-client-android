@@ -5,11 +5,11 @@ plugins {
 
 android {
     namespace 'com.web3auth.tss_client_android'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         minSdk 24
-        targetSdk 33
+        targetSdk 34
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
         externalNativeBuild {
@@ -43,17 +43,17 @@ dependencies {
     implementation 'com.google.android.material:material:1.9.0'
 
     implementation 'org.web3j:core:4.8.8-android'
-    implementation 'com.google.code.gson:gson:2.9.1'
+    implementation 'com.google.code.gson:gson:2.10.1'
     implementation 'com.squareup.okhttp3:okhttp:4.9.3'
-    implementation 'org.json:json:20220924'
-    implementation('io.socket:socket.io-client:2.1.0') {
+    implementation 'org.json:json:20240303'
+    implementation('io.socket:socket.io-client:2.1.1') {
         // excluding org.json which is provided by Android
         exclude group: 'org.json', module: 'json'
     }
 
     testImplementation 'junit:junit:4.13.2'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }
 
 task javadoc(type: Javadoc) {
